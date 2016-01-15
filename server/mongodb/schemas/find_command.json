@@ -1,0 +1,41 @@
+{
+  "properties": {
+    "find": { "type": "string" },
+    "filter": { "type": "object" },
+    "readPreference": {
+      "type": "object",
+      "properties": {
+        "mode": { "type": "string" },
+        "tags": { "type": "object" }
+      }
+    },
+    "sort": { "type": "object" },
+    "projection": { "type": "object" },
+    "hint": {
+      "anyOf": [{
+        "type": "object"
+      }, {
+        "type": "string"
+      }]
+    },
+    "skip": { "type": "integer" },
+    "limit": { "type": "integer" },
+    "batchSize": { "type": "integer" },
+    "singleBatch": { "type": "boolean" },
+    "comment": { "type": "string" },
+    "maxScan": { "type": "integer" },
+    "maxTimeMS": { "type": "integer" },
+    "readConcern": { "type": "object" },
+    "max": { "type": "object" },
+    "min": { "type": "object" },
+    "returnKey": { "type": "boolean" },
+    "showRecordId": { "type": "boolean" },
+    "snapshot": { "type": "boolean" },
+    "tailable": { "type": "boolean" },
+    "oplogReplay": { "type": "boolean" },
+    "noCursorTimeout": { "type": "boolean" },
+    "awaitData": { "type": "boolean" },
+    "allowPartialResults": { "type": "boolean" }
+  },
+  "required": ["find", "filter"]
+}

@@ -2,10 +2,12 @@
 
 var Promise = require('./util').Promise,
   nextTick = require('./util').nextTick,
+  EventEmitter = require('./event_emitter'),
   co = require('co');
 
-class Cursor {
+class Cursor extends EventEmitter {
   constructor(db, collection, query) {
+    super();
     this.db = db;
     this.collection = collection;
     this.query = query;
@@ -16,8 +18,6 @@ class Cursor {
     this.cursorId = null;
     // Currently selected document
     this.document = null;
-    // Events for the cursor
-    this._events = {};
     // The options
     this.options = {};
   }
@@ -157,7 +157,7 @@ class Cursor {
         co(function*() {
           var r = yield self.db.command({
             find: self.collection.namespace,
-            query: self.query
+            filter: self.query
           });
 
           // Add the documents to the end
@@ -225,6 +225,8 @@ class Cursor {
    * @return {Promise} returns Promise
    */
   toArray() {
+    var self = this;
+
     return new Promise(function(resolve, reject) {
       co(function*() {
         var docs = [];
@@ -232,23 +234,23 @@ class Cursor {
         // Execute the find command
         var r = yield self.db.command({
           find: self.collection.namespace,
-          query: self.query
+          filter: self.query
         });
 
         // Get the documents
         docs = docs.concat(r.documents);
-        if(r.cursorId == null) return resolve(docs);
+        if(r.cursorId.isZero()) return resolve(docs);
 
         // Execute getMore's until we are done
         while(true) {
           var r1 = yield self.db.command({
             getMore: self.collection.namespace,
-            cursorId: r.cursorId
+            cursorId: r.cursorId.toJSON()
           });
 
           // Get the documents
-          docs = docs.concat(r.documents);
-          if(r.cursorId == null) break;
+          docs = docs.concat(r1.documents);
+          if(r1.cursorId.isZero()) break;
         }
 
         // Return the document
@@ -279,64 +281,6 @@ class Cursor {
         resolve();
       }).catch(reject);
     });
-  }
-
-  //
-  // Stream implementation
-  //
-
-  /**
-   *
-   */
-  emit(event, obj) {
-    var args = Array.prototype.slice.call(arguments, 1);
-
-    if(this._events[event]) {
-      for(var i = 0; i < this._events[event].length; i++) {
-        this._events[event][i].apply(this._events[event][i], args);
-      }
-    }
-  }
-
-  /**
-   *
-   */
-  on(event, callback) {
-    var self = this;
-
-    if(!this._events[event]) {
-      this._events[event] = [];
-    }
-
-    // Push the callback to the list of events
-    this._events[event].push(callback);
-
-    // We are done
-    if(event == 'data' && this._events[event].length == 1) {
-      // Stream all the data
-      var _read  = function() {
-        co(function*() {
-          // Get a document
-          var doc = yield self.next();
-          // If we have no document
-          if(!doc) {
-            return self.emit('end');
-          }
-
-          // We have a document
-          if(doc) {
-            self.emit('data', doc);
-          }
-
-          // Schedule another tick
-          nextTick(_read);
-        }).catch(function(err) {
-          self.emit('error', err);
-        });
-      }
-
-      nextTick(_read);
-    }
   }
 }
 

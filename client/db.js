@@ -3,10 +3,10 @@
 var Collection = require('./collection');
 
 class Db {
-  constructor(name, channel, socket, store) {
+  constructor(name, channel, transport, store) {
     this.name = name;
     this.channel = channel;
-    this.socket = socket;
+    this.transport = transport;
     this.store = store;
   }
 
@@ -41,8 +41,8 @@ class Db {
         resolve(result);
       });
 
-      // Write the operation out on the socket (with a group id)
-      self.socket.emit(self.channel, op);
+      // Write the operation out on the transport (with a group id)
+      self.transport.write(self.channel, op);
     });
   }
 }

@@ -1,0 +1,14 @@
+{
+  "properties": {
+    "getMore": { "type": "string" },
+    "cursorId": {
+      "type": "object",
+      "properties": {
+        "$numberLong": { "type": "string" }
+      }
+    },
+    "batchSize": { "type": "integer" },
+    "maxTimeMS": { "type": "integer" }
+  },
+  "required": ["getMore", "cursorId"]
+}

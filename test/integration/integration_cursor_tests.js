@@ -1,0 +1,132 @@
+var co = require('co'),
+  path = require('path'),
+  assert = require('assert'),
+  f = require('util').format,
+  SocketIOTransport = require('../../server/socket_io_transport'),
+  Server = require('../../server/server'),
+  MongoClient = require('mongodb').MongoClient;
+
+// MongoDB Topology Manager
+var ServerManager = require('mongodb-topology-manager').Server,
+  ReplSetManager = require('mongodb-topology-manager').ReplSet;
+
+// Get the client so we can simulate the Browser - Server connection
+var MongoBrowserClient = require('../../client/mongo_client'),
+  SocketIOClientTransport = require('../../client/transports/socket_io_transport'),
+  ioClient = require('socket.io-client');
+
+var createServer = function() {
+  return new Promise(function(resolve, reject) {
+    co(function*() {
+      var httpServer = require('http').createServer(function(req, res) {
+        res.end("Hello World Page");
+      });
+
+      // Get the MongoClient
+      var client = yield MongoClient.connect('mongodb://localhost:27017/test', {
+        db: {
+          promoteLongs: false
+        }
+      });
+
+      // Add to the server
+      var mongoDBserver = new Server(client, {});
+      // Add a socket transport
+      mongoDBserver.registerHandler(new SocketIOTransport(httpServer));
+
+      // Register channel handlers these are used to handle any data before it's passed through
+      // to the mongodb handler
+      mongoDBserver.channel('mongodb').before(function(conn, data, callback) {
+        console.log("-------------------------- recevied mongodb channel message pre")
+        console.dir(conn)
+        callback();
+      });
+
+      // Register channel handlers these are used to handle any data before it's returned through
+      // to the mongodb handler
+      mongoDBserver.channel('mongodb').after(function(conn, data, callback) {
+        console.log("-------------------------- recevied mongodb channel message post")
+        console.dir(conn)
+        callback();
+      });
+
+      // Listen to the http server
+      httpServer.listen(8080, function() {
+        resolve({
+          httpServer: httpServer,
+          client: client,
+          mongoDBserver: mongoDBserver
+        });
+      });
+    }).catch(function(err) {
+      reject(err);
+    });
+  });
+}
+
+describe('Integration', function() {
+  describe('MongoDB API Cursor', function() {
+    it('correctly peform cursor iteration', function(done) {
+      co(function*() {
+        // Start the server manager
+        var manager = new ServerManager('mongod', {
+          dbpath: path.join(path.resolve('db'), f("data-%d", 27017)),
+          setParameter: ['enableTestCommands=1']
+        });
+
+        // Start a MongoDB instance
+        yield manager.purge();
+        yield manager.start();
+
+        //
+        // Server connection
+        //
+
+        var object = yield createServer();
+        var mongoDBserver = object.mongoDBserver;
+        var dbClient = object.client;
+        var httpServer = object.httpServer;
+
+        //
+        // Client connection
+        //
+
+        // Create an instance
+        var client = new MongoBrowserClient(new SocketIOClientTransport(ioClient.connect, {}));
+
+        // Attempt to connect
+        var connectedClient = yield client.connect('http://localhost:8080');
+        // Create documents
+        var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});
+
+        // Perform an insert
+        var result = yield connectedClient.db('test').collection('tests').insertMany(insertDocs, {w:1});
+        assert.equal(true, result.ok);
+        assert.equal(1005, result.insertedCount);
+        assert.equal(1005, Object.keys(result.insertedIds).length);
+
+        var s = new Date().getTime();
+        // Iterate over all the cursors
+        var docs = yield connectedClient.db('test').collection('tests').find({}).toArray();
+        var e = new Date().getTime();
+        console.log("==================== time ms :: " + (e - s));
+
+        var s = new Date().getTime();
+        var docs = yield dbClient.db('test').collection('tests').find({}).toArray();
+        var e = new Date().getTime();
+        console.log("==================== time ms :: " + (e - s));
+
+        // Shut down the
+        httpServer.close();
+        // Shut down MongoDB connection
+        dbClient.close();
+        // Shut down MongoDB instance
+        yield manager.stop();
+
+        done();
+      }).catch(function(e) {
+        console.log(e.stack)
+      });
+    });
+  });
+});

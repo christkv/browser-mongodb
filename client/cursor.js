@@ -124,7 +124,7 @@ class Cursor extends EventEmitter {
         self.document = yield self.next();
         if(self.document == null) return resolve(false);
         resolve(true);
-      });
+      }).catch(reject);
     });
   }
 
@@ -158,11 +158,15 @@ class Cursor extends EventEmitter {
           var r = yield self.db.command({
             find: self.collection.namespace,
             filter: self.query
-          });
+          }, {fullResult:true});
+
+          // Get the connection identifier
+          self.connection = r.connection;
+          r = r.result;
 
           // Add the documents to the end
-          self.documents = self.documents.concat(r.documents);
-          self.cursorId = r.cursorId;
+          self.documents = self.documents.concat(r.cursor.firstBatch);
+          self.cursorId = r.cursor.id;
 
           // Are we listening
           if(self.options.listen && self.cursorId != null) {
@@ -192,21 +196,32 @@ class Cursor extends EventEmitter {
       } else if(self.documents.length == 0
         && self.state == 'open') {
 
+        // Cursor id === 0 and no documents left === exhausted cursor.
+        if(self.cursorId.isZero()) {
+          self.state = 'destroyed';
+          return resolve(null);
+        }
+
         //
         // Cursor was is open, need to fire GETMORE command
         co(function*() {
           var r = yield self.db.command({
             getMore: self.collection.namespace,
-            cursorId: self.cursorId
-          });
+            cursorId: self.cursorId,
+            connection: self.connection
+          }, {fullResult:true});
+
+          // Get the connection identifier
+          self.connection = r.connection;
+          r = r.result;
 
           // Add the documents to the end
-          self.documents = self.documents.concat(r.documents);
-          self.cursorId = r.cursorId;
+          self.documents = self.documents.concat(r.cursor.nextBatch);
+          self.cursorId = r.cursor.id;
           // Return the first document
           var doc = self.documents.shift();
           // We have no results
-          if(doc === undefined) {
+          if(doc == undefined) {
             self.state = 'destroyed';
             return resolve(null);
           }
@@ -235,22 +250,36 @@ class Cursor extends EventEmitter {
         var r = yield self.db.command({
           find: self.collection.namespace,
           filter: self.query
-        });
+        }, {fullResult:true});
 
-        // Get the documents
-        docs = docs.concat(r.documents);
-        if(r.cursorId.isZero()) return resolve(docs);
+        // Get the connection identifier
+        var connection = r.connection;
+        r = r.result;
+
+        // Get the documents, server format or API format
+        docs = docs.concat(r.cursor.firstBatch);
+        var cursorId = r.cursor.id;
+        // No more documents
+        if(cursorId.isZero()) return resolve(docs);
 
         // Execute getMore's until we are done
         while(true) {
           var r1 = yield self.db.command({
             getMore: self.collection.namespace,
-            cursorId: r.cursorId.toJSON()
-          });
+            cursorId: cursorId.toJSON(),
+            connection: connection
+          }, {fullResult:true});
+
+          // Get the connection identifier
+          var connection = r1.connection;
+          r1 = r1.result;
+
+          // Get the documents, server format or API format
+          docs = docs.concat(r1.cursor.nextBatch);
+          var cursorId = r1.cursor.id;
 
           // Get the documents
-          docs = docs.concat(r1.documents);
-          if(r1.cursorId.isZero()) break;
+          if(cursorId.isZero()) break;
         }
 
         // Return the document

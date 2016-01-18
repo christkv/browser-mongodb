@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/christkv/browser-mongodb",
   "dependencies": {
+    "bson": "^0.4.21",
     "co": "~4.4",
     "mongodb": "^2.1.x",
     "mongodb-extended-json": "^1.6.1",

@@ -137,7 +137,6 @@ describe('Integration', function() {
         var connectedClient = yield client.connect('http://localhost:8080');
         // Perform an insert
         var result = yield connectedClient.db('test').collection('tests').insertOne({a:1}, {w:1});
-        assert.equal(true, result.ok);
         assert.equal(1, result.insertedCount);
         assert.equal(1, result.insertedIds.length);
 
@@ -186,7 +185,6 @@ describe('Integration', function() {
         var connectedClient = yield client.connect('http://localhost:8080');
         // Perform an insert
         var result = yield connectedClient.db('test').collection('tests').insertMany([{a:1}, {a:2}], {w:1});
-        assert.equal(true, result.ok);
         assert.equal(2, result.insertedCount);
         assert.equal(2, Object.keys(result.insertedIds).length);
         // Shut down the

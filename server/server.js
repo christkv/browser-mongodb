@@ -27,7 +27,7 @@ class Server {
     this.channels = {};
 
     // Handles the actual translation
-    this.handler = new ChannelHandler(client);
+    this.handler = new ChannelHandler(client, options);
   }
 
   registerHandler(handler) {

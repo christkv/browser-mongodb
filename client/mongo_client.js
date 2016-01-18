@@ -6,6 +6,7 @@ var Promise = require('./util').Promise,
   Long = require('./bson/long'),
   ObjectId = require('./bson/objectid'),
   co = require('co'),
+  deserializeFast = require('./bson/bson_parser').deserializeFast,
   Db = require('./db');
 
 var deserialize = function(obj) {
@@ -46,20 +47,18 @@ class MongoClient {
         // Listen to all mongodb socket information
         self.transport.onChannel(self.channel, function(data) {
           // console.log("\n\n\n!!!!!!!!!!!!!!!!!!!!!!!!! Client received data")
-          data = deserialize(data);
-          // if(data.r[0] && data.r[0].documents) {
-          //   console.dir(deserialize(data.r[0].documents))
-          // }
-          // console.log(JSON.stringify(data, null, 2))
-          // // console.dir(data.r)
-
+          // console.dir(data)
           if(data.ok != null && !data.ok) {
-            // We got a command error
             self.store.call(data._id, new MongoError(data), undefined);
           } else if(data.ok != null && data.ok && data.change) {
-            // We got a message about changes to the results from a query
             self.store.update(data);
           } else if(data.ok != null && data.ok) {
+            if(data.result.length) {
+              data.result = deserializeFast(data.result);
+            } else {
+              data.result = deserialize(data.result);
+            }
+
             // Result from a command
             self.store.call(data._id, null, data);
           }

@@ -4,6 +4,7 @@ var co = require('co'),
   f = require('util').format,
   SocketIOTransport = require('../../server/socket_io_transport'),
   Server = require('../../server/server'),
+  Long = require('../../client/bson/long'),
   MongoClient = require('mongodb').MongoClient;
 
 // MongoDB Topology Manager
@@ -65,8 +66,8 @@ var createServer = function(options) {
 }
 
 describe('Integration', function() {
-  describe('MongoDB API Cursor', function() {
-    it('correctly peform cursor iteration using toArray and raw', function(done) {
+  describe('MongoDB Errors', function() {
+    it('correctly catch errors when using executing illegal command', function(done) {
       co(function*() {
         // Start the server manager
         var manager = new ServerManager('mongod', {
@@ -96,21 +97,15 @@ describe('Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:8080');
-        // Create documents
-        var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});
 
-        // Perform an insert
-        var result = yield connectedClient.db('test').collection('tests').insertMany(insertDocs, {w:1});
-        assert.equal(1005, result.insertedCount);
-        assert.equal(1005, Object.keys(result.insertedIds).length);
-
-        var s = new Date().getTime();
-        // Iterate over all the cursors
-        var docs = yield connectedClient.db('test').collection('tests').find({}).toArray();
-        var e = new Date().getTime();
-        // console.log("==================== time ms :: " + (e - s));
-        // Assert the values
-        assert.equal(1005, docs.length);
+        // Execute a command that does not exist and receive the error code
+        try {
+          var result = yield connectedClient.db('test').command({buildProfile:true});
+        } catch(err) {
+          assert.equal(0, err.code);
+          assert.equal('command does not exits', err.message);
+          assert.deepEqual({buildProfile:true}, err.op);
+        }
 
         // Shut down the
         httpServer.close();
@@ -125,7 +120,75 @@ describe('Integration', function() {
       });
     });
 
-    it('correctly peform cursor iteration using toArray and no raw', function(done) {
+    it('correctly catch errors when mid iteration due to illegal cursor id in raw mode', function(done) {
+      co(function*() {
+        // Start the server manager
+        var manager = new ServerManager('mongod', {
+          dbpath: path.join(path.resolve('db'), f("data-%d", 27017)),
+          setParameter: ['enableTestCommands=1']
+        });
+
+        // Start a MongoDB instance
+        yield manager.purge();
+        yield manager.start();
+
+        //
+        // Server connection
+        //
+
+        var object = yield createServer({raw:true});
+        var mongoDBserver = object.mongoDBserver;
+        var dbClient = object.client;
+        var httpServer = object.httpServer;
+
+        //
+        // Client connection
+        //
+
+        // Create an instance
+        var client = new MongoBrowserClient(new SocketIOClientTransport(ioClient.connect, {}));
+
+        // Attempt to connect
+        var connectedClient = yield client.connect('http://localhost:8080');
+
+        // Create documents
+        var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});
+
+        // Perform an insert
+        var result = yield connectedClient.db('test').collection('tests').insertMany(insertDocs, {w:1});
+        assert.equal(1005, result.insertedCount);
+        assert.equal(1005, Object.keys(result.insertedIds).length);
+
+        // Attempt to cause error in find command
+        var cursor = connectedClient.db('test').collection('tests').find({});
+        var docs = [];
+
+        try {
+          // Iterate over all the cursors
+          while(yield cursor.hasNext()) {
+            // Muck up the cursor Id
+            cursor.cursorId = Long.fromNumber(5);
+            docs.push(yield cursor.next());
+          }
+
+          assert.true(false);
+        } catch(err) {
+        }
+
+        // Shut down the
+        httpServer.close();
+        // Shut down MongoDB connection
+        dbClient.close();
+        // Shut down MongoDB instance
+        yield manager.stop();
+
+        done();
+      }).catch(function(e) {
+        console.log(e.stack)
+      });
+    });
+
+    it('correctly catch errors when mid iteration due to illegal cursor id not in raw mode', function(done) {
       co(function*() {
         // Start the server manager
         var manager = new ServerManager('mongod', {
@@ -155,6 +218,7 @@ describe('Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:8080');
+
         // Create documents
         var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});
 
@@ -163,14 +227,25 @@ describe('Integration', function() {
         assert.equal(1005, result.insertedCount);
         assert.equal(1005, Object.keys(result.insertedIds).length);
 
-        var s = new Date().getTime();
-        // Iterate over all the cursors
-        var docs = yield connectedClient.db('test').collection('tests').find({}).toArray();
-        var e = new Date().getTime();
-        // console.log("==================== time ms :: " + (e - s));
-        // Assert the values
-        assert.equal(1005, docs.length);
+        // Attempt to cause error in find command
+        var cursor = connectedClient.db('test').collection('tests').find({});
+        var docs = [];
+        var code = null;
 
+        try {
+          // Iterate over all the cursors
+          while(yield cursor.hasNext()) {
+            // Muck up the cursor Id
+            cursor.cursorId = Long.fromNumber(5);
+            docs.push(yield cursor.next());
+          }
+
+          assert.true(false);
+        } catch(err) {
+          code = err.code;
+        }
+
+        assert.ok(typeof code == 'number');
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection
@@ -184,7 +259,7 @@ describe('Integration', function() {
       });
     });
 
-    it('correctly peform cursor iteration using hasNext and next with raw', function(done) {
+    it('correctly catch errors when executing cursor find in raw mode', function(done) {
       co(function*() {
         // Start the server manager
         var manager = new ServerManager('mongod', {
@@ -214,6 +289,7 @@ describe('Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:8080');
+
         // Create documents
         var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});
 
@@ -222,86 +298,23 @@ describe('Integration', function() {
         assert.equal(1005, result.insertedCount);
         assert.equal(1005, Object.keys(result.insertedIds).length);
 
+        // Attempt to cause error in find command
+        var cursor = connectedClient.db('test').collection('tests').find({$noman:true});
         var docs = [];
-        var cursor = connectedClient.db('test').collection('tests').find({});
+        var code = null;
 
-        var s = new Date().getTime();
-        // Iterate over all the cursors
-        while(yield cursor.hasNext()) {
-          docs.push(yield cursor.next());
+        try {
+          // Iterate over all the cursors
+          while(yield cursor.hasNext()) {
+            docs.push(yield cursor.next());
+          }
+
+          assert.true(false);
+        } catch(err) {
+          code = err.code;
         }
 
-        var e = new Date().getTime();
-        // console.log("==================== time ms :: " + (e - s));
-
-        // Assert the values
-        assert.equal(1005, docs.length);
-
-        // Shut down the
-        httpServer.close();
-        // Shut down MongoDB connection
-        dbClient.close();
-        // Shut down MongoDB instance
-        yield manager.stop();
-
-        done();
-      }).catch(function(e) {
-        console.log(e.stack)
-      });
-    });
-
-    it('correctly peform cursor iteration using hasNext and next with without raw', function(done) {
-      co(function*() {
-        // Start the server manager
-        var manager = new ServerManager('mongod', {
-          dbpath: path.join(path.resolve('db'), f("data-%d", 27017)),
-          setParameter: ['enableTestCommands=1']
-        });
-
-        // Start a MongoDB instance
-        yield manager.purge();
-        yield manager.start();
-
-        //
-        // Server connection
-        //
-
-        var object = yield createServer({raw:false});
-        var mongoDBserver = object.mongoDBserver;
-        var dbClient = object.client;
-        var httpServer = object.httpServer;
-
-        //
-        // Client connection
-        //
-
-        // Create an instance
-        var client = new MongoBrowserClient(new SocketIOClientTransport(ioClient.connect, {}));
-
-        // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080');
-        // Create documents
-        var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});
-
-        // Perform an insert
-        var result = yield connectedClient.db('test').collection('tests').insertMany(insertDocs, {w:1});
-        assert.equal(1005, result.insertedCount);
-        assert.equal(1005, Object.keys(result.insertedIds).length);
-
-        var docs = [];
-        var cursor = connectedClient.db('test').collection('tests').find({});
-
-        var s = new Date().getTime();
-        // Iterate over all the cursors
-        while(yield cursor.hasNext()) {
-          docs.push(yield cursor.next());
-        }
-        var e = new Date().getTime();
-        // console.log("==================== time ms :: " + (e - s));
-
-        // Assert the values
-        assert.equal(1005, docs.length);
-
+        assert.ok(typeof code == 'number');
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection

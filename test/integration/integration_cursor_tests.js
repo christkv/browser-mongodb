@@ -121,6 +121,7 @@ describe('Integration', function() {
 
         done();
       }).catch(function(e) {
+        console.dir(e)
         console.log(e.stack)
       });
     });

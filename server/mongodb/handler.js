@@ -107,6 +107,7 @@ class ChannelHandler {
     var self = this;
     options = options || { promoteLong: false };
     options.raw = options.raw || self.options.raw || true;
+    // options.raw = false;
 
     return new Promise(function(resolve, reject) {
       co(function*() {
@@ -137,12 +138,23 @@ class ChannelHandler {
         // Get the full result
         options.fullResult = true;
 
+        // console.log("-------------------------------------------- find command")
+        // console.dir(op)
+
         // Execute the command
         var result = yield self.client.db(db).command(Object.assign(op, {
           find: collection
         }), options);
 
-        if(options.raw) {
+        // console.log("-------------------------------------------- find command DONE")
+        // console.dir(op)
+        // console.dir(result.documents.length)
+        // if(options.raw) {
+        //   // console.dir(self.bson.deserialize(result.documents[0]))
+        //   console.log(result.documents[0].slice(0, 128).indexOf(okFalse))
+        // }
+
+        if(options.raw && result.documents[0].slice(0, 64).indexOf(okFalse) != -1) {
           // console.dir(result.documents[0])
           var errorMessage = self.bson.deserialize(result.documents[0]);
           // Reject the command
@@ -185,6 +197,11 @@ class ChannelHandler {
         var db = parts.shift();
         var collection = parts.join('.');
 
+        // Retrieve the server we wish to use
+        var connection = op.collection;
+        // console.log("========================================== getMore against connection")
+        // console.dir(connection)
+
         // Create command
         var command = {
           getMore: op.cursorId, collection: collection
@@ -203,7 +220,7 @@ class ChannelHandler {
           result.documents[0] = JSON.parse(EJSON.stringify(result.documents[0]));
         }
 
-        if(options.raw) {
+        if(options.raw && result.documents[0].slice(0, 64).indexOf(okFalse) != -1) {
           // console.dir(result.documents[0])
           var errorMessage = self.bson.deserialize(result.documents[0]);
           // Reject the command

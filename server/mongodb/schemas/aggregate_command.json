@@ -1,0 +1,24 @@
+{
+  "properties": {
+    "aggregate": { "type": "string" },
+    "pipeline": { "type": "array" },
+    "explain": { "type": "boolean" },
+    "allowDiskUse": { "type": "boolean" },
+    "batchSize": { "type": "integer" },
+    "bypassDocumentValidation": { "type": "boolean" },
+    "readConcern": {
+      "type": "object",
+      "properties": {
+        "level": { "type": "string" }
+      }
+    },
+    "readPreference": {
+      "type": "object",
+      "properties": {
+        "mode": { "type": "string" },
+        "tags": { "type": "object" }
+      }
+    }
+  },
+  "required": ["aggregate", "pipeline"]
+}

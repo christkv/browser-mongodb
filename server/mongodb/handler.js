@@ -45,6 +45,8 @@ var validators = createValidators([{
   command: 'find', json: 'find_command.json'
 }, {
   command: 'getMore', json: 'get_more_command.json'
+}, {
+  command: 'aggregate', json: 'aggregate_command.json'
 }]);
 
 class ChannelHandler {
@@ -69,6 +71,8 @@ class ChannelHandler {
         promise = self.insertMany(op);
       } else if(op.find) {
         promise = self.find(op);
+      } else if(op.aggregate) {
+        promise = self.aggregate(op);
       } else if(op.getMore) {
         promise = self.getMore(op);
       } else {
@@ -100,6 +104,88 @@ class ChannelHandler {
       err.op = doc ? doc.op : {};
       // Write the error
       connection.write(channel, err);
+    });
+  }
+
+  aggregate(op, options) {
+    var self = this;
+    options = options || { promoteLong: false };
+    options.raw = options.raw || self.options.raw || true;
+    // options.raw = false;
+
+    return new Promise(function(resolve, reject) {
+      co(function*() {
+        // Perform the validation
+        var results = validators.aggregate.validate(op);
+        if(results.length > 0) {
+          return reject({
+            ok:false, code: ERRORS.FIND_COMMAND_FAILURE, message: 'command failed validation', op: op
+          });
+        }
+
+        // Split the name space
+        var parts = op.aggregate.split('.');
+        var db = parts.shift();
+        var collection = parts.join('.');
+
+        // Do we have a read Preference specified
+        if(op.readPreference) {
+          options.readPreference = new ReadPreference(op.readPreference.mode, op.readPreference.tags);
+          delete op.readPreference;
+        }
+
+        // No pomoteLong set then default to false
+        if(options.promoteLong == null) {
+          options.promoteLong = true;
+        }
+
+        // Get the full result
+        options.fullResult = true;
+
+        // Build the command
+        var command = {
+          aggregate: collection,
+          pipeline: op.pipeline,
+        }
+
+        // Add all missing options
+        if(op.explain) command.explain = op.explain;
+        if(op.allowDiskUse) command.allowDiskUse = op.allowDiskUse;
+        if(op.bypassDocumentValidation) command.bypassDocumentValidation = op.bypassDocumentValidation;
+
+        // Always return as cursor
+        if(!command.cursor) command.cursor = {}
+
+        // Set a batchSize 
+        if(op.batchSize) {
+          command.cursor.batchSize = op.batchSize;
+        }
+
+        // Set a readConcern
+        if(op.readConcern && op.readConcern.level) {
+          command.readConcern.level = op.readConcern.level;
+        }
+
+        // Execute the command
+        var result = yield self.client.db(db).command(command, options);
+
+        // Check if we have a raw response
+        if(options.raw && result.documents[0].slice(0, 64).indexOf(okFalse) != -1) {
+          var errorMessage = self.bson.deserialize(result.documents[0]);
+          // Reject the command
+          return reject({
+            ok:false, code: errorMessage.code, message: errorMessage.errmsg, op: op
+          });
+        }
+
+        // Create extended EJSON if don't have a raw query
+        if(!options.raw) {
+          result.documents[0] = JSON.parse(EJSON.stringify(result.documents[0]));
+        }
+
+        // Return response
+        resolve({connection: result.hashedName, result: result.documents[0]});
+      }).catch(reject);
     });
   }
 
@@ -138,24 +224,13 @@ class ChannelHandler {
         // Get the full result
         options.fullResult = true;
 
-        // console.log("-------------------------------------------- find command")
-        // console.dir(op)
-
         // Execute the command
         var result = yield self.client.db(db).command(Object.assign(op, {
           find: collection
         }), options);
 
-        // console.log("-------------------------------------------- find command DONE")
-        // console.dir(op)
-        // console.dir(result.documents.length)
-        // if(options.raw) {
-        //   // console.dir(self.bson.deserialize(result.documents[0]))
-        //   console.log(result.documents[0].slice(0, 128).indexOf(okFalse))
-        // }
-
+        // Check if we have a raw response
         if(options.raw && result.documents[0].slice(0, 64).indexOf(okFalse) != -1) {
-          // console.dir(result.documents[0])
           var errorMessage = self.bson.deserialize(result.documents[0]);
           // Reject the command
           return reject({
@@ -197,10 +272,18 @@ class ChannelHandler {
         var db = parts.shift();
         var collection = parts.join('.');
 
-        // Retrieve the server we wish to use
-        var connection = op.collection;
-        // console.log("========================================== getMore against connection")
-        // console.dir(connection)
+        // Do we need to pin the command to an operation
+        if(op.connection) {
+          // Find a connection that can take the getMore
+          var connections = self.client.serverConfig.connections();
+          for(var i = 0; i < connections.length; i++) {
+            // Retrieve the server we wish to use
+            if(connections[i].hashedName == op.connection) {
+              options.connection = connections[i];
+              break;
+            }
+          }          
+        }
 
         // Create command
         var command = {
@@ -220,8 +303,8 @@ class ChannelHandler {
           result.documents[0] = JSON.parse(EJSON.stringify(result.documents[0]));
         }
 
+        // Check if we have a raw response
         if(options.raw && result.documents[0].slice(0, 64).indexOf(okFalse) != -1) {
-          // console.dir(result.documents[0])
           var errorMessage = self.bson.deserialize(result.documents[0]);
           // Reject the command
           return reject({

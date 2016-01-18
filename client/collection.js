@@ -1,6 +1,7 @@
 "use strict"
 
 var Promise = require('./util').Promise,
+  CommandCursor = require('./command_cursor'),
   Cursor = require('./cursor');
 
 class Collection {
@@ -256,6 +257,19 @@ class Collection {
    */
   find(query) {
     return new Cursor(this.db, this, query);
+  }
+
+  /**
+   * Creates an aggregation cursor for a query that can be used to iterate over results from MongoDB
+   * @method
+   * @param {array} pipeline The cursor pipeline object.
+   * @throws {MongoError}
+   * @return {Cursor}
+   */
+  aggregate(pipeline) {
+    return new CommandCursor({
+      aggregate: this.namespace, pipeline: pipeline
+    }, this.db, this);
   }
 }
 

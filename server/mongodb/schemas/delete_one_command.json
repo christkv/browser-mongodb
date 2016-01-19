@@ -1,0 +1,16 @@
+{
+  "properties": {
+    "deleteOne": { "type": "string" },
+    "q": { "type": "object" },
+    "w": {
+      "oneOf": [{
+        "type": "number"
+      }, {
+        "type": "string"
+      }]
+    },
+    "j": { "type": "boolean" },
+    "wtimeout": { "type": "integer" }
+  },
+  "required": ["deleteOne", "q"]
+}

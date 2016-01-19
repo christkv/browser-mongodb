@@ -12,7 +12,7 @@
     "sort": { "type": "object" },
     "projection": { "type": "object" },
     "hint": {
-      "anyOf": [{
+      "oneOf": [{
         "type": "object"
       }, {
         "type": "string"

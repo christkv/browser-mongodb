@@ -12,9 +12,9 @@ var Promise = require('./util').Promise,
 var deserialize = function(obj) {
   if(obj != null && typeof obj === 'object') {
     for(var name in obj) {
-      if(obj[name]['$numberLong']) {
+      if(obj[name] != null && obj[name]['$numberLong']) {
         obj[name] = Long.fromString(obj[name]['$numberLong']);
-      } else if(obj[name]['$oid']) {
+      } else if(obj[name] != null && obj[name]['$oid']) {
         obj[name] = new ObjectId(obj[name]['$oid']);
       } else if(obj[name] != null && typeof obj[name] === 'object') {
         obj[name] = deserialize(obj[name]);

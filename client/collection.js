@@ -20,15 +20,17 @@ class Collection {
    * @param {object} doc Document to insert.
    * @param {object} [options=null] Optional settings.
    * @param {boolean} [options.bypassDocumentValidation=false] Allow driver to bypass schema validation in MongoDB 3.2 or higher.
+   * @param {string|number} [options.w=null] Write concern for the write operation.
+   * @param {boolean} [options.j=null] Wait for journal flush on write.
+   * @param {number} [options.wtimeout=null] Write concern timeout.
    * @return {Promise} returns Promise
    */
   insertOne(document, options) {
-    return this.db.command({
-      ns: this.namespace,
-      insertOne: Object.assign({
-        doc: document
+    return this.db.command(Object.assign({
+        insertOne: this.namespace,
+        doc: document,
       }, options || {})
-    });
+    );
   }
 
   /**
@@ -41,15 +43,17 @@ class Collection {
    * @param {object} [options=null] Optional settings.
    * @param {boolean} [options.ordered=true] Execute write operation in ordered or unordered fashion.
    * @param {boolean} [options.bypassDocumentValidation=false] Allow driver to bypass schema validation in MongoDB 3.2 or higher.
+   * @param {string|number} [options.w=null] Write concern for the write operation.
+   * @param {boolean} [options.j=null] Wait for journal flush on write.
+   * @param {number} [options.wtimeout=null] Write concern timeout.
    * @return {Promise} returns Promise
    */
   insertMany(documents, options) {
-    return this.db.command({
-      ns: this.namespace,
-      insertMany: Object.assign({
-        docs: documents
+    return this.db.command(Object.assign({
+        insertMany: this.namespace,
+        docs: documents,
       }, options || {})
-    });
+    );
   }
 
   /**
@@ -60,16 +64,18 @@ class Collection {
    * @param {object} [options=null] Optional settings.
    * @param {boolean} [options.upsert=false] Update operation is an upsert.
    * @param {boolean} [options.bypassDocumentValidation=false] Allow driver to bypass schema validation in MongoDB 3.2 or higher.
+   * @param {string|number} [options.w=null] Write concern for the write operation.
+   * @param {boolean} [options.j=null] Wait for journal flush on write.
+   * @param {number} [options.wtimeout=null] Write concern timeout.
    * @return {Promise} returns Promise
    */
   updateOne(filter, update, options) {
-    return this.db.command({
-      ns: this.namespace,
-      updateOne: Object.assign({
-        q: selector,
+    return this.db.command(Object.assign({
+        updateOne: this.namespace,
+        q: filter,
         u: update
       }, options || {})
-    });
+    );
   }
 
   /**
@@ -80,16 +86,18 @@ class Collection {
    * @param {object} [options=null] Optional settings.
    * @param {boolean} [options.upsert=false] Update operation is an upsert.
    * @param {boolean} [options.bypassDocumentValidation=false] Allow driver to bypass schema validation in MongoDB 3.2 or higher.
+   * @param {string|number} [options.w=null] Write concern for the write operation.
+   * @param {boolean} [options.j=null] Wait for journal flush on write.
+   * @param {number} [options.wtimeout=null] Write concern timeout.
    * @return {Promise} returns Promise
    */
-  updateMany(selector, update, options) {
-    return this.db.command({
-      ns: this.namespace,
-      updateMany: Object.assign({
-        q: selector,
+  updateMany(filter, update, options) {
+    return this.db.command(Object.assign({
+        updateMany: this.namespace,
+        q: filter,
         u: update
       }, options || {})
-    });
+    );
   }
 
   /**
@@ -100,6 +108,9 @@ class Collection {
    * @param {object} [options=null] Optional settings.
    * @param {boolean} [options.upsert=false] Update operation is an upsert.
    * @param {boolean} [options.bypassDocumentValidation=false] Allow driver to bypass schema validation in MongoDB 3.2 or higher.
+   * @param {string|number} [options.w=null] Write concern for the write operation.
+   * @param {boolean} [options.j=null] Wait for journal flush on write.
+   * @param {number} [options.wtimeout=null] Write concern timeout.
    * @return {Promise} returns Promise
    */
   replaceOne(filter, doc, options) {
@@ -116,15 +127,24 @@ class Collection {
    * @method
    * @param {object} filter The Filter used to select the document to remove
    * @param {object} [options=null] Optional settings.
+   * @param {string|number} [options.w=null] Write concern for the write operation.
+   * @param {boolean} [options.j=null] Wait for journal flush on write.
+   * @param {number} [options.wtimeout=null] Write concern timeout.
    * @return {Promise} returns Promise
    */
-  deleteOne(selector, options) {
-    return this.db.command({
-      ns: this.namespace,
-      deleteOne: Object.assign({
-        q: selector
+  deleteOne(filter, options) {
+    return this.db.command(Object.assign({
+        deleteOne: this.namespace,
+        q: filter,
       }, options || {})
-    });
+    );
+
+    // return this.db.command({
+    //   ns: this.namespace,
+    //   deleteOne: Object.assign({
+    //     q: selector
+    //   }, options || {})
+    // });
   }
 
   /**
@@ -132,15 +152,24 @@ class Collection {
    * @method
    * @param {object} filter The Filter used to select the documents to remove
    * @param {object} [options=null] Optional settings.
+   * @param {string|number} [options.w=null] Write concern for the write operation.
+   * @param {boolean} [options.j=null] Wait for journal flush on write.
+   * @param {number} [options.wtimeout=null] Write concern timeout.
    * @return {Promise} returns Promise
    */
-  deleteMany(selector, options) {
-    return this.db.command({
-      ns: this.namespace,
-      deleteMany: Object.assign({
-        q: selector
+  deleteMany(filter, options) {
+    return this.db.command(Object.assign({
+        deleteMany: this.namespace,
+        q: filter,
       }, options || {})
-    });
+    );
+
+    // return this.db.command({
+    //   ns: this.namespace,
+    //   deleteMany: Object.assign({
+    //     q: selector
+    //   }, options || {})
+    // });
   }
 
   /**
@@ -152,6 +181,9 @@ class Collection {
    * @param {object} [options.projection=null] Limits the fields to return for all matching documents.
    * @param {object} [options.sort=null] Determines which document the operation modifies if the query selects multiple documents.
    * @param {number} [options.maxTimeMS=null] The maximum amount of time to allow the query to run.
+   * @param {string|number} [options.w=null] Write concern for the write operation.
+   * @param {boolean} [options.j=null] Wait for journal flush on write.
+   * @param {number} [options.wtimeout=null] Write concern timeout.
    * @return {Promise} returns Promise
    */
   findOneAndDelete(selector, options) {
@@ -175,6 +207,9 @@ class Collection {
    * @param {number} [options.maxTimeMS=null] The maximum amount of time to allow the query to run.
    * @param {boolean} [options.upsert=false] Upsert the document if it does not exist.
    * @param {boolean} [options.returnOriginal=true] When false, returns the updated document rather than the original. The default is true.
+   * @param {string|number} [options.w=null] Write concern for the write operation.
+   * @param {boolean} [options.j=null] Wait for journal flush on write.
+   * @param {number} [options.wtimeout=null] Write concern timeout.
    * @return {Promise} returns Promise
    */
   findOneAndUpdate(selector, update, options) {
@@ -199,6 +234,9 @@ class Collection {
    * @param {number} [options.maxTimeMS=null] The maximum amount of time to allow the query to run.
    * @param {boolean} [options.upsert=false] Upsert the document if it does not exist.
    * @param {boolean} [options.returnOriginal=true] When false, returns the updated document rather than the original. The default is true.
+   * @param {string|number} [options.w=null] Write concern for the write operation.
+   * @param {boolean} [options.j=null] Wait for journal flush on write.
+   * @param {number} [options.wtimeout=null] Write concern timeout.
    * @return {Promise} returns Promise
    */
   findOneAndReplace(selector, replace, options) {
@@ -239,6 +277,9 @@ class Collection {
    * @param {number} [options.wtimeout=null] The write concern timeout.
    * @param {boolean} [options.ordered=true] Execute write operation in ordered or unordered fashion.
    * @param {boolean} [options.bypassDocumentValidation=false] Allow driver to bypass schema validation in MongoDB 3.2 or higher.
+   * @param {string|number} [options.w=null] Write concern for the write operation.
+   * @param {boolean} [options.j=null] Wait for journal flush on write.
+   * @param {number} [options.wtimeout=null] Write concern timeout.
    * @return {Promise} returns Promise
    */
   bulkWrite(operations, options) {

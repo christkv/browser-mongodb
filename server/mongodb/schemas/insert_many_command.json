@@ -1,0 +1,22 @@
+{
+  "properties": {
+    "insertMany": { "type": "string" },
+    "docs": { 
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "object" }
+    },
+    "ordered": { "type": "boolean" },
+    "bypassDocumentValidation": { "type": "boolean" },
+    "w": {
+      "oneOf": [{
+        "type": "number"
+      }, {
+        "type": "string"
+      }]
+    },
+    "j": { "type": "boolean" },
+    "wtimeout": { "type": "integer" }
+  },
+  "required": ["insertMany", "docs"]
+}

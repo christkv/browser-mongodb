@@ -1,0 +1,17 @@
+{
+  "properties": {
+    "insertOne": { "type": "string" },
+    "doc": { "type": "object" },
+    "bypassDocumentValidation": { "type": "boolean" },
+    "w": {
+      "oneOf": [{
+        "type": "number"
+      }, {
+        "type": "string"
+      }]
+    },
+    "j": { "type": "boolean" },
+    "wtimeout": { "type": "integer" }
+  },
+  "required": ["insertOne", "doc"]
+}

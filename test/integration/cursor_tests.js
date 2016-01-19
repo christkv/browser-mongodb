@@ -353,5 +353,68 @@ describe('Integration', function() {
         console.log(e.stack)
       });
     });
+
+    it('correctly peform query iteration using stream', function(done) {
+      co(function*() {
+        // Start the server manager
+        var manager = new ServerManager('mongod', {
+          dbpath: path.join(path.resolve('db'), f("data-%d", 27017)),
+          setParameter: ['enableTestCommands=1']
+        });
+
+        // Start a MongoDB instance
+        yield manager.purge();
+        yield manager.start();
+
+        //
+        // Server connection
+        //
+
+        var object = yield createServer({raw:false});
+        var mongoDBserver = object.mongoDBserver;
+        var dbClient = object.client;
+        var httpServer = object.httpServer;
+
+        //
+        // Client connection
+        //
+
+        // Create an instance
+        var client = new MongoBrowserClient(new SocketIOClientTransport(ioClient.connect, {}));
+
+        // Attempt to connect
+        var connectedClient = yield client.connect('http://localhost:8080');
+        // Create documents
+        var insertDocs = []; for(var i = 0; i < 105; i++) insertDocs.push({a:i});
+
+        // Perform an insert
+        var result = yield connectedClient.db('test').collection('tests').insertMany(insertDocs, {w:1});
+        assert.equal(105, result.insertedCount);
+        assert.equal(105, Object.keys(result.insertedIds).length);
+
+        var docs = [];
+        var cursor = connectedClient.db('test').collection('tests').find({});
+        cursor.on('data', function(item) {
+          docs.push(item);
+        });
+
+        cursor.on('end', function(item) {
+          co(function*() {
+            // Assert the values
+            assert.equal(105, docs.length);
+
+            // Shut down the
+            httpServer.close();
+            // Shut down MongoDB connection
+            dbClient.close();
+            // Shut down MongoDB instance
+            yield manager.stop();
+            done();
+          });
+        });
+      }).catch(function(e) {
+        console.log(e.stack)
+      });
+    });
   });
 });

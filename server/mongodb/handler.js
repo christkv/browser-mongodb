@@ -47,6 +47,18 @@ var validators = createValidators([{
   command: 'getMore', json: 'get_more_command.json'
 }, {
   command: 'aggregate', json: 'aggregate_command.json'
+}, {
+  command: 'updateOne', json: 'update_one_command.json'
+}, {
+  command: 'updateMany', json: 'update_many_command.json'
+}, {
+  command: 'insertOne', json: 'insert_one_command.json'
+}, {
+  command: 'insertMany', json: 'insert_many_command.json'
+}, {
+  command: 'deleteOne', json: 'delete_one_command.json'
+}, {
+  command: 'deleteMany', json: 'delete_many_command.json'
 }]);
 
 class ChannelHandler {
@@ -66,9 +78,17 @@ class ChannelHandler {
       if(op.ismaster) {
         promise = self.ismaster(op);
       } else if(op.insertOne) {
-        promise = self.insertOne(op);
+        promise = self.insert(true, op);
       } else if(op.insertMany) {
-        promise = self.insertMany(op);
+        promise = self.insert(false, op);
+      } else if(op.updateOne) {
+        promise = self.update(true, op);
+      } else if(op.updateMany) {
+        promise = self.update(false, op);
+      } else if(op.deleteOne) {
+        promise = self.delete(true, op);
+      } else if(op.deleteMany) {
+        promise = self.delete(false, op);
       } else if(op.find) {
         promise = self.find(op);
       } else if(op.aggregate) {
@@ -330,46 +350,157 @@ class ChannelHandler {
     });
   }
 
-  insertOne(op, options) {
+  update(single, op, options) {
     var self = this;
     options = options || {};
 
     return new Promise(function(resolve, reject) {
       co(function*() {
+        // Do we have a single op
+        var validator = single ? validators.updateOne : validators.updateMany;
+        // Perform the validation
+        var results = validator.validate(op);
+        if(results.length > 0) {
+          return reject({
+            ok:false, code: ERRORS.FIND_COMMAND_FAILURE, message: 'command failed validation', op: op
+          });
+        }
+
+
         // Split the name space
-        var parts = op.ns.split('.');
+        var parts = single ? op.updateOne.split('.') : op.updateMany.split('.');
         var db = parts.shift();
         var collection = parts.join('.');
 
-        // Merge supported options
-        var options = mergeOptions(op.insertOne);
-        // Get the collection
-        var result = yield self.client.db(db).collection(collection).insertOne(op.insertOne.doc, options);
-        // Return response
-        resolve({
-          insertedCount: result.insertedCount, insertedIds: [result.insertedId]
-        });
+        // Unpack the command
+        var query = op.q;
+        var update = op.u;
+        // Merge the ops
+        var commandOptions = {}
+        if(op.upsert) commandOptions.upsert = op.upsert;
+        if(op.bypassDocumentValidation) commandOptions.bypassDocumentValidation = op.bypassDocumentValidation;
+        if(op.w) commandOptions.w = op.w;
+        if(op.wtimeout) commandOptions.wtimeout = op.wtimeout;
+        if(op.j) commandOptions.j = op.j;
+
+        // Return full results
+        commandOptions.fullResult = true;
+
+        // Function to execute
+        if(single) {
+          var result = yield self.client.db(db).collection(collection).updateOne(query, update, commandOptions);
+        } else {
+          var result = yield self.client.db(db).collection(collection).updateMany(query, update, commandOptions);
+        }
+
+        // Final result
+        var finalResult = {
+          matchedCount: result.matchedCount,
+          upsertedCount: result.upsertedCount, modifiedCount:result.modifiedCount
+        };
+
+        if(result.upsertedId) finalResult.upsertedId = result.upsertedId;
+
+        // Return the result;
+        resolve(finalResult);
       }).catch(reject);
     });
   }
 
-  insertMany(op, options) {
+  insert(single, op, options) {
     var self = this;
     options = options || {};
 
     return new Promise(function(resolve, reject) {
       co(function*() {
+        // Do we have a single op
+        var validator = single ? validators.insertOne : validators.insertMany;
+        // Perform the validation
+        var results = validator.validate(op);
+        if(results.length > 0) {
+          return reject({
+            ok:false, code: ERRORS.FIND_COMMAND_FAILURE, message: 'command failed validation', op: op
+          });
+        }
+
         // Split the name space
-        var parts = op.ns.split('.');
+        var parts = single ? op.insertOne.split('.') : op.insertMany.split('.');
         var db = parts.shift();
         var collection = parts.join('.');
-        // Merge supported options
-        var options = mergeOptions(op.insertMany);
-        // Get the collection
-        var result = yield self.client.db(db).collection(collection).insertMany(op.insertMany.docs, options);
-        // Return response
+
+        // Merge the ops
+        var commandOptions = {}
+        if(op.ordered) commandOptions.ordered = op.ordered;
+        if(op.bypassDocumentValidation) commandOptions.bypassDocumentValidation = op.bypassDocumentValidation;
+        if(op.w) commandOptions.w = op.w;
+        if(op.wtimeout) commandOptions.wtimeout = op.wtimeout;
+        if(op.j) commandOptions.j = op.j;
+
+        // Return full results
+        commandOptions.fullResult = true;
+
+        // Function to execute
+        if(single) {
+          var result = yield self.client.db(db).collection(collection).insertOne(op.doc, commandOptions);
+        } else {
+          var result = yield self.client.db(db).collection(collection).insertMany(op.docs, commandOptions);
+        }
+
+        // Final result
+        var finalResult = {
+          insertedCount: result.insertedCount,         
+        };
+
+        if(result.insertedId) finalResult.insertedIds = [result.insertedId];
+        if(result.insertedIds) finalResult.insertedIds = result.insertedIds;
+
+        // Return the result;
+        resolve(finalResult);
+      }).catch(reject);
+    });
+  }
+
+  delete(single, op, options) {
+    var self = this;
+    options = options || {};
+
+    return new Promise(function(resolve, reject) {
+      co(function*() {
+        // Do we have a single op
+        var validator = single ? validators.deleteOne : validators.deleteMany;
+        // Perform the validation
+        var results = validator.validate(op);
+        if(results.length > 0) {
+          return reject({
+            ok:false, code: ERRORS.FIND_COMMAND_FAILURE, message: 'command failed validation', op: op
+          });
+        }
+
+        // Split the name space
+        var parts = single ? op.deleteOne.split('.') : op.deleteMany.split('.');
+        var db = parts.shift();
+        var collection = parts.join('.');
+
+        // Merge the ops
+        var commandOptions = {}
+        if(op.bypassDocumentValidation) commandOptions.bypassDocumentValidation = op.bypassDocumentValidation;
+        if(op.w) commandOptions.w = op.w;
+        if(op.wtimeout) commandOptions.wtimeout = op.wtimeout;
+        if(op.j) commandOptions.j = op.j;
+
+        // Return full results
+        commandOptions.fullResult = true;
+
+        // Function to execute
+        if(single) {
+          var result = yield self.client.db(db).collection(collection).deleteOne(op.doc, commandOptions);
+        } else {
+          var result = yield self.client.db(db).collection(collection).deleteMany(op.docs, commandOptions);
+        }
+
+        // Return the result;
         resolve({
-          insertedCount: result.insertedCount, insertedIds: result.insertedIds
+          deletedCount: result.deletedCount
         });
       }).catch(reject);
     });

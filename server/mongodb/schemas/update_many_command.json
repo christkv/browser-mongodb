@@ -1,0 +1,18 @@
+{
+  "properties": {
+    "updateMany": { "type": "string" },
+    "q": { "type": "object" },
+    "u": { "type": "object" },
+    "bypassDocumentValidation": { "type": "boolean" },
+    "w": {
+      "oneOf": [{
+        "type": "number"
+      }, {
+        "type": "string"
+      }]
+    },
+    "j": { "type": "boolean" },
+    "wtimeout": { "type": "integer" }
+  },
+  "required": ["updateMany", "q", "u"]
+}

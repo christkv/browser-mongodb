@@ -1,0 +1,23 @@
+{
+  "properties": {
+    "findOneAndUpdate": { "type": "string" },
+    "q": { "type": "object" },
+    "u": { "type": "object" },
+    "projection": { "type": "object" },
+    "sort": { "type": "object" },
+    "maxTimeMS": { "type": "integer" },
+    "upsert": { "type": "boolean" },
+    "returnOriginal": { "type": "boolean" },
+    "bypassDocumentValidation": { "type": "boolean" },
+    "w": {
+      "oneOf": [{
+        "type": "number"
+      }, {
+        "type": "string"
+      }]
+    },
+    "j": { "type": "boolean" },
+    "wtimeout": { "type": "integer" }
+  },
+  "required": ["findOneAndUpdate", "q", "u"]
+}

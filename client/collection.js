@@ -114,12 +114,12 @@ class Collection {
    * @return {Promise} returns Promise
    */
   replaceOne(filter, doc, options) {
-    return this.db.command({
-      ns: this.namespace,
-      replaceOne: Object.assign({
-        q: filter, u: doc
+    return this.db.command(Object.assign({
+        replaceOne: this.namespace,
+        q: filter,
+        u: doc
       }, options || {})
-    });
+    );
   }
 
   /**
@@ -138,13 +138,6 @@ class Collection {
         q: filter,
       }, options || {})
     );
-
-    // return this.db.command({
-    //   ns: this.namespace,
-    //   deleteOne: Object.assign({
-    //     q: selector
-    //   }, options || {})
-    // });
   }
 
   /**
@@ -163,13 +156,6 @@ class Collection {
         q: filter,
       }, options || {})
     );
-
-    // return this.db.command({
-    //   ns: this.namespace,
-    //   deleteMany: Object.assign({
-    //     q: selector
-    //   }, options || {})
-    // });
   }
 
   /**
@@ -184,15 +170,15 @@ class Collection {
    * @param {string|number} [options.w=null] Write concern for the write operation.
    * @param {boolean} [options.j=null] Wait for journal flush on write.
    * @param {number} [options.wtimeout=null] Write concern timeout.
+   * @param {boolean} [options.bypassDocumentValidation=false] Allow driver to bypass schema validation in MongoDB 3.2 or higher.
    * @return {Promise} returns Promise
    */
-  findOneAndDelete(selector, options) {
-    return this.db.command({
-      ns: this.namespace,
-      findOneAndDelete: Object.assign({
-        q: selector
+  findOneAndDelete(filter, options) {
+    return this.db.command(Object.assign({
+        findOneAndDelete: this.namespace,
+        q: filter,
       }, options || {})
-    });
+    );
   }
 
   /**
@@ -210,16 +196,16 @@ class Collection {
    * @param {string|number} [options.w=null] Write concern for the write operation.
    * @param {boolean} [options.j=null] Wait for journal flush on write.
    * @param {number} [options.wtimeout=null] Write concern timeout.
+   * @param {boolean} [options.bypassDocumentValidation=false] Allow driver to bypass schema validation in MongoDB 3.2 or higher.
    * @return {Promise} returns Promise
    */
-  findOneAndUpdate(selector, update, options) {
-    return this.db.command({
-      ns: this.namespace,
-      findOneAndUpdate: Object.assign({
-        q: selector,
+  findOneAndUpdate(filter, update, options) {
+    return this.db.command(Object.assign({
+        findOneAndUpdate: this.namespace,
+        q: filter,
         u: update
       }, options || {})
-    });
+    );
   }
 
   /**
@@ -237,16 +223,16 @@ class Collection {
    * @param {string|number} [options.w=null] Write concern for the write operation.
    * @param {boolean} [options.j=null] Wait for journal flush on write.
    * @param {number} [options.wtimeout=null] Write concern timeout.
+   * @param {boolean} [options.bypassDocumentValidation=false] Allow driver to bypass schema validation in MongoDB 3.2 or higher.
    * @return {Promise} returns Promise
    */
-  findOneAndReplace(selector, replace, options) {
-    return this.db.command({
-      ns: this.namespace,
-      findOneAndReplace: Object.assign({
-        q: selector,
+  findOneAndReplace(filter, replace, options) {
+    return this.db.command(Object.assign({
+        findOneAndReplace: this.namespace,
+        q: filter,
         u: replace
       }, options || {})
-    });
+    );
   }
 
   /**

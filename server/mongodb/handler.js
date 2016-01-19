@@ -19,6 +19,7 @@ ERRORS.FIND_COMMAND_FAILURE = 1;
 ERRORS.GENERAL_COMMAND_FAILURE = 2;
 ERRORS.GETMORE_COMMAND_FAILURE = 3;
 ERRORS.CURSOR_NOT_FOUND = 4;
+ERRORS.REPLACE_CONTAINS_OPERATORS = 5;
 
 // Used to identify errors in Raw messages
 var okFalse = new Buffer([1, 111, 107, 0, 0, 0, 0]);
@@ -41,25 +42,21 @@ var createValidators = function(validators) {
 }
 
 // Create all the validators
-var validators = createValidators([{
-  command: 'find', json: 'find_command.json'
-}, {
-  command: 'getMore', json: 'get_more_command.json'
-}, {
-  command: 'aggregate', json: 'aggregate_command.json'
-}, {
-  command: 'updateOne', json: 'update_one_command.json'
-}, {
-  command: 'updateMany', json: 'update_many_command.json'
-}, {
-  command: 'insertOne', json: 'insert_one_command.json'
-}, {
-  command: 'insertMany', json: 'insert_many_command.json'
-}, {
-  command: 'deleteOne', json: 'delete_one_command.json'
-}, {
-  command: 'deleteMany', json: 'delete_many_command.json'
-}]);
+var validators = createValidators([
+  { command: 'find', json: 'find_command.json' }, 
+  { command: 'getMore', json: 'get_more_command.json' }, 
+  { command: 'aggregate', json: 'aggregate_command.json' }, 
+  { command: 'updateOne', json: 'update_one_command.json' }, 
+  { command: 'updateMany', json: 'update_many_command.json' }, 
+  { command: 'replaceOne', json: 'replace_one_command.json' }, 
+  { command: 'insertOne', json: 'insert_one_command.json' }, 
+  { command: 'insertMany', json: 'insert_many_command.json' }, 
+  { command: 'deleteOne', json: 'delete_one_command.json' }, 
+  { command: 'deleteMany', json: 'delete_many_command.json' }, 
+  { command: 'findOneAndDelete', json: 'find_one_and_delete_command.json' }, 
+  { command: 'findOneAndUpdate', json: 'find_one_and_update_command.json' }, 
+  { command: 'findOneAndReplace', json: 'find_one_and_replace_command.json'}
+]);
 
 class ChannelHandler {
   constructor(client, options) {
@@ -85,6 +82,8 @@ class ChannelHandler {
         promise = self.update(true, op);
       } else if(op.updateMany) {
         promise = self.update(false, op);
+      } else if(op.replaceOne) {
+        promise = self.replaceOne(op);
       } else if(op.deleteOne) {
         promise = self.delete(true, op);
       } else if(op.deleteMany) {
@@ -95,6 +94,12 @@ class ChannelHandler {
         promise = self.aggregate(op);
       } else if(op.getMore) {
         promise = self.getMore(op);
+      } else if(op.findOneAndDelete) {
+        promise = self.findOneAndDelete(op);
+      } else if(op.findOneAndUpdate) {
+        promise = self.findOneAndUpdate(op);
+      } else if(op.findOneAndReplace) {
+        promise = self.findOneAndReplace(op);
       } else {
         // We have an unsuported protocol message
         return connection.write(channel, {
@@ -276,7 +281,6 @@ class ChannelHandler {
 
     return new Promise(function(resolve, reject) {
       co(function*() {
-        // console.log('getmore execute')
         // Perform the validation
         var results = validators.getMore.validate(op);
         if(results.length > 0) {
@@ -348,6 +352,64 @@ class ChannelHandler {
         findAndModify:true, commands: ['ismaster'], listen: true
       });
     });
+  }
+
+  replaceOne(op, options) {
+    var self = this;
+    options = options || {};
+
+    return new Promise(function(resolve, reject) {
+      co(function*() {
+        // Perform the validation
+        var results = validators.replaceOne.validate(op);
+        if(results.length > 0) {
+          return reject({
+            ok:false, code: ERRORS.FIND_COMMAND_FAILURE, message: 'command failed validation', op: op
+          });
+        }
+
+        // Split the name space
+        var parts = op.replaceOne.split('.');
+        var db = parts.shift();
+        var collection = parts.join('.');
+
+        // Unpack the command
+        var query = op.q;
+        var update = op.u;
+
+        // Validate the update
+        for(var name in update) {
+          if(name[0] == '$') return reject({
+            ok:false, code: ERRORS.REPLACE_CONTAINS_OPERATORS, message: 'replace document contains operators'
+          });
+        }
+
+        // Merge the ops
+        var commandOptions = {}
+        if(op.upsert) commandOptions.upsert = op.upsert;
+        if(op.bypassDocumentValidation) commandOptions.bypassDocumentValidation = op.bypassDocumentValidation;
+        if(op.w) commandOptions.w = op.w;
+        if(op.wtimeout) commandOptions.wtimeout = op.wtimeout;
+        if(op.j) commandOptions.j = op.j;
+
+        // Return full results
+        commandOptions.fullResult = true;
+
+        // Function to execute
+        var result = yield self.client.db(db).collection(collection).replaceOne(query, update, commandOptions);
+
+        // Final result
+        var finalResult = {
+          matchedCount: result.matchedCount,
+          upsertedCount: result.upsertedCount, modifiedCount:result.modifiedCount
+        };
+
+        if(result.upsertedId) finalResult.upsertedId = result.upsertedId;
+
+        // Return the result;
+        resolve(finalResult);
+      }).catch(reject);
+    });   
   }
 
   update(single, op, options) {
@@ -502,6 +564,98 @@ class ChannelHandler {
         resolve({
           deletedCount: result.deletedCount
         });
+      }).catch(reject);
+    });
+  }
+
+  findOneAndDelete(op, options) {
+    var self = this;
+    options = options || {};
+
+    return new Promise(function(resolve, reject) {
+      co(function*() {
+        // Perform the validation
+        var results = validators.findOneAndDelete.validate(op);
+        if(results.length > 0) {
+          return reject({
+            ok:false, code: ERRORS.FIND_COMMAND_FAILURE, message: 'command failed validation', op: op
+          });
+        }
+
+        // Split the name space
+        var parts = op.findOneAndDelete.split('.');
+        var db = parts.shift();
+        var collection = parts.join('.');
+
+        // Return full results
+        op.fullResult = true;
+
+        // Function to execute
+        var result = yield self.client.db(db).collection(collection).findOneAndDelete(op.q, op);
+        // Return the result;
+        resolve(result.documents[0].value);
+      }).catch(reject);
+    });
+  }
+
+  findOneAndUpdate(op, options) { 
+    var self = this;
+    options = options || {};
+
+    return new Promise(function(resolve, reject) {
+      co(function*() {
+        // Perform the validation
+        var results = validators.findOneAndUpdate.validate(op);
+        if(results.length > 0) {
+          return reject({
+            ok:false, code: ERRORS.FIND_COMMAND_FAILURE, message: 'command failed validation', op: op
+          });
+        }
+
+        // Split the name space
+        var parts = op.findOneAndUpdate.split('.');
+        var db = parts.shift();
+        var collection = parts.join('.');
+
+        // Return full results
+        op.fullResult = true;
+
+        // Function to execute
+        var result = yield self.client.db(db).collection(collection).findOneAndUpdate(op.q, op.u, op);
+
+        // Return the result;
+        resolve(result.documents[0].value);
+      }).catch(reject);
+    });
+  }
+      
+  findOneAndReplace(op, options) {
+    var self = this;
+    options = options || {};
+
+    return new Promise(function(resolve, reject) {
+      co(function*() {
+        // Perform the validation
+        var results = validators.findOneAndReplace.validate(op);
+        if(results.length > 0) {
+          return reject({
+            ok:false, code: ERRORS.FIND_COMMAND_FAILURE, message: 'command failed validation', op: op
+          });
+        }
+
+        // Split the name space
+        var parts = op.findOneAndReplace.split('.');
+        var db = parts.shift();
+        var collection = parts.join('.');
+
+        // Return full results
+        op.fullResult = true;
+
+        // Function to execute
+        var result = yield self.client.db(db).collection(collection).findOneAndReplace(op.q, op.u, op);
+
+        // Return the result;
+        resolve(result.documents[0].value);
       }).catch(reject);
     });
   }

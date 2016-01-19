@@ -1,0 +1,19 @@
+{
+  "properties": {
+    "findOneAndDelete": { "type": "string" },
+    "q": { "type": "object" },
+    "projection": { "type": "object" },
+    "sort": { "type": "object" },
+    "maxTimeMS": { "type": "integer" },
+    "w": {
+      "oneOf": [{
+        "type": "number"
+      }, {
+        "type": "string"
+      }]
+    },
+    "j": { "type": "boolean" },
+    "wtimeout": { "type": "integer" }
+  },
+  "required": ["findOneAndDelete", "q"]
+}

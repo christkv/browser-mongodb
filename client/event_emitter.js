@@ -1,6 +1,7 @@
 "use strict"
 
-var co = require('co');
+var co = require('co'),
+  nextTick = require('./util').nextTick;
 
 class EventEmitter {
   constructor() {

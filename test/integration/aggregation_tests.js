@@ -65,8 +65,8 @@ var createServer = function(options) {
 }
 
 describe('Integration', function() {
-  describe('MongoDB API Cursor', function() {
-    it('correctly peform cursor iteration using toArray and raw', function(done) {
+  describe('MongoDB Aggregation Cursor', function() {
+    it('correctly peform aggregation iteration using toArray and raw', function(done) {
       co(function*() {
         // Start the server manager
         var manager = new ServerManager('mongod', {
@@ -97,20 +97,26 @@ describe('Integration', function() {
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:8080');
         // Create documents
-        var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});
+        var insertDocs = []; for(var i = 0; i < 205; i++) insertDocs.push({a:i});
 
         // Perform an insert
         var result = yield connectedClient.db('test').collection('tests').insertMany(insertDocs, {w:1});
-        assert.equal(1005, result.insertedCount);
-        assert.equal(1005, Object.keys(result.insertedIds).length);
+        assert.equal(205, result.insertedCount);
+        assert.equal(205, Object.keys(result.insertedIds).length);
 
         var s = new Date().getTime();
         // Iterate over all the cursors
-        var docs = yield connectedClient.db('test').collection('tests').find({}).toArray();
+        var docs = yield connectedClient.db('test').collection('tests').aggregate([{$match: {}}]).toArray();
         var e = new Date().getTime();
         // console.log("==================== time ms :: " + (e - s));
         // Assert the values
-        assert.equal(1005, docs.length);
+        assert.equal(205, docs.length);
+
+        var docs = yield connectedClient.db('test').collection('tests').aggregate([{$match: {}}]).batchSize(20).toArray();
+        var e = new Date().getTime();
+        // console.log("==================== time ms :: " + (e - s));
+        // Assert the values
+        assert.equal(205, docs.length);
 
         // Shut down the
         httpServer.close();
@@ -121,12 +127,11 @@ describe('Integration', function() {
 
         done();
       }).catch(function(e) {
-        console.dir(e)
         console.log(e.stack)
       });
     });
 
-    it('correctly peform cursor iteration using toArray and no raw', function(done) {
+    it('correctly peform aggregation iteration using toArray and no raw', function(done) {
       co(function*() {
         // Start the server manager
         var manager = new ServerManager('mongod', {
@@ -157,20 +162,20 @@ describe('Integration', function() {
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:8080');
         // Create documents
-        var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});
+        var insertDocs = []; for(var i = 0; i < 105; i++) insertDocs.push({a:i});
 
         // Perform an insert
         var result = yield connectedClient.db('test').collection('tests').insertMany(insertDocs, {w:1});
-        assert.equal(1005, result.insertedCount);
-        assert.equal(1005, Object.keys(result.insertedIds).length);
+        assert.equal(105, result.insertedCount);
+        assert.equal(105, Object.keys(result.insertedIds).length);
 
         var s = new Date().getTime();
         // Iterate over all the cursors
-        var docs = yield connectedClient.db('test').collection('tests').find({}).toArray();
+        var docs = yield connectedClient.db('test').collection('tests').aggregate([{$match: {}}]).toArray();
         var e = new Date().getTime();
         // console.log("==================== time ms :: " + (e - s));
         // Assert the values
-        assert.equal(1005, docs.length);
+        assert.equal(105, docs.length);
 
         // Shut down the
         httpServer.close();
@@ -185,7 +190,7 @@ describe('Integration', function() {
       });
     });
 
-    it('correctly peform cursor iteration using hasNext and next with raw', function(done) {
+    it('correctly peform aggregate iteration using hasNext and next with raw', function(done) {
       co(function*() {
         // Start the server manager
         var manager = new ServerManager('mongod', {
@@ -216,15 +221,15 @@ describe('Integration', function() {
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:8080');
         // Create documents
-        var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});
+        var insertDocs = []; for(var i = 0; i < 105; i++) insertDocs.push({a:i});
 
         // Perform an insert
         var result = yield connectedClient.db('test').collection('tests').insertMany(insertDocs, {w:1});
-        assert.equal(1005, result.insertedCount);
-        assert.equal(1005, Object.keys(result.insertedIds).length);
+        assert.equal(105, result.insertedCount);
+        assert.equal(105, Object.keys(result.insertedIds).length);
 
         var docs = [];
-        var cursor = connectedClient.db('test').collection('tests').find({});
+        var cursor = connectedClient.db('test').collection('tests').aggregate([{$match: {}}]);
 
         var s = new Date().getTime();
         // Iterate over all the cursors
@@ -236,7 +241,7 @@ describe('Integration', function() {
         // console.log("==================== time ms :: " + (e - s));
 
         // Assert the values
-        assert.equal(1005, docs.length);
+        assert.equal(105, docs.length);
 
         // Shut down the
         httpServer.close();
@@ -282,15 +287,15 @@ describe('Integration', function() {
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:8080');
         // Create documents
-        var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});
+        var insertDocs = []; for(var i = 0; i < 105; i++) insertDocs.push({a:i});
 
         // Perform an insert
         var result = yield connectedClient.db('test').collection('tests').insertMany(insertDocs, {w:1});
-        assert.equal(1005, result.insertedCount);
-        assert.equal(1005, Object.keys(result.insertedIds).length);
+        assert.equal(105, result.insertedCount);
+        assert.equal(105, Object.keys(result.insertedIds).length);
 
         var docs = [];
-        var cursor = connectedClient.db('test').collection('tests').find({});
+        var cursor = connectedClient.db('test').collection('tests').aggregate([{$match:{}}]);
 
         var s = new Date().getTime();
         // Iterate over all the cursors
@@ -298,10 +303,9 @@ describe('Integration', function() {
           docs.push(yield cursor.next());
         }
         var e = new Date().getTime();
-        // console.log("==================== time ms :: " + (e - s));
 
         // Assert the values
-        assert.equal(1005, docs.length);
+        assert.equal(105, docs.length);
 
         // Shut down the
         httpServer.close();
@@ -311,6 +315,69 @@ describe('Integration', function() {
         yield manager.stop();
 
         done();
+      }).catch(function(e) {
+        console.log(e.stack)
+      });
+    });
+
+    it('correctly peform aggregation iteration using stream', function(done) {
+      co(function*() {
+        // Start the server manager
+        var manager = new ServerManager('mongod', {
+          dbpath: path.join(path.resolve('db'), f("data-%d", 27017)),
+          setParameter: ['enableTestCommands=1']
+        });
+
+        // Start a MongoDB instance
+        yield manager.purge();
+        yield manager.start();
+
+        //
+        // Server connection
+        //
+
+        var object = yield createServer({raw:false});
+        var mongoDBserver = object.mongoDBserver;
+        var dbClient = object.client;
+        var httpServer = object.httpServer;
+
+        //
+        // Client connection
+        //
+
+        // Create an instance
+        var client = new MongoBrowserClient(new SocketIOClientTransport(ioClient.connect, {}));
+
+        // Attempt to connect
+        var connectedClient = yield client.connect('http://localhost:8080');
+        // Create documents
+        var insertDocs = []; for(var i = 0; i < 105; i++) insertDocs.push({a:i});
+
+        // Perform an insert
+        var result = yield connectedClient.db('test').collection('tests').insertMany(insertDocs, {w:1});
+        assert.equal(105, result.insertedCount);
+        assert.equal(105, Object.keys(result.insertedIds).length);
+
+        var docs = [];
+        var cursor = connectedClient.db('test').collection('tests').aggregate([{$match:{}}]);
+        cursor.on('data', function(item) {
+          docs.push(item);
+        });
+
+        cursor.on('end', function(item) {
+          co(function*() {
+            // Assert the values
+            assert.equal(105, docs.length);
+
+            // Shut down the
+            httpServer.close();
+            // Shut down MongoDB connection
+            dbClient.close();
+            // Shut down MongoDB instance
+            yield manager.stop();
+            done();
+          });
+        });
       }).catch(function(e) {
         console.log(e.stack)
       });

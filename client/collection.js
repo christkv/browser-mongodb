@@ -1,7 +1,7 @@
 "use strict"
 
 var Promise = require('./util').Promise,
-  CommandCursor = require('./command_cursor'),
+  AggregationCursor = require('./aggregation_cursor'),
   Cursor = require('./cursor');
 
 class Collection {
@@ -267,7 +267,7 @@ class Collection {
    * @return {Cursor}
    */
   aggregate(pipeline) {
-    return new CommandCursor({
+    return new AggregationCursor({
       aggregate: this.namespace, pipeline: pipeline
     }, this.db, this);
   }

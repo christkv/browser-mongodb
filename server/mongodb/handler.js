@@ -256,6 +256,7 @@ class ChannelHandler {
 
     return new Promise(function(resolve, reject) {
       co(function*() {
+        // console.log('getmore execute')
         // Perform the validation
         var results = validators.getMore.validate(op);
         if(results.length > 0) {

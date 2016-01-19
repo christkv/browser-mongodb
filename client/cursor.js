@@ -1,7 +1,6 @@
 "use strict"
 
 var Promise = require('./util').Promise,
-  nextTick = require('./util').nextTick,
   EventEmitter = require('./event_emitter'),
   co = require('co');
 
@@ -27,6 +26,21 @@ class Cursor extends EventEmitter {
   //
   setReadPreference(mode, tags) {
     this.options.readPreference = { mode: mode, tags: tags };
+    return this;
+  }
+
+  projection(value) {
+    this.options.projection = value;
+    return this;
+  }
+
+  comment(value) {
+    this.options.comment = value;
+    return this;
+  }
+
+  hint(value) {
+    this.options.hint = value;
     return this;
   }
 
@@ -79,10 +93,10 @@ class Cursor extends EventEmitter {
    * @param {object} doc Document to insert.
    * @param {object} [options=null] Optional settings.
    * @param {boolean} [options.oplogReplay=false] Specify that we wish to use the oplogReply flag.
-   * @param {number} [options.maxAwaitTimeMS] Specify the amount of time to wait before closing tailing cursor (only applies to MongoDB 3.2 or higher).
+   * @param {boolean} [options.awaitData=true] Specify that we wish to use the oplogReply flag.
    */
   tailable(options) {
-    this.options = Object.assign(this.options, {tailable:true}, options || {});
+    this.options = Object.assign(this.options, {tailable:true, awaitData:true}, options || {});
     return this;
   }
 
@@ -155,10 +169,16 @@ class Cursor extends EventEmitter {
         //
         // Cursor was just opened, need to fire FIND command
         co(function*() {
-          var r = yield self.db.command({
+          var commandOptions = filterOptions(self.options, ['readPreference', 'sort', 'projection'
+            , 'hint', 'skip', 'limit', 'batchSize', 'singleBatch', 'comment', 'maxScan', 'maxTimeMS'
+            , 'readConcern', 'max', 'min', 'returnKey', 'showRecordId', 'snapshot', 'tailable'
+            , 'oplogReply', 'noCursorTimeout', 'awaitData', 'allowPartialResults']);
+
+          // Execute the find command
+          var r = yield self.db.command(Object.assign({
             find: self.collection.namespace,
             filter: self.query
-          }, {fullResult:true});
+          }, commandOptions), {fullResult:true});
 
           // Get the connection identifier
           self.connection = r.connection;
@@ -187,7 +207,7 @@ class Cursor extends EventEmitter {
           resolve(doc);
         }).catch(reject);
       } else if(self.documents.length == 0
-        && self.state == 'open' && self.cursorId == null) {
+        && self.state == 'open' && self.cursorId.isZero()) {
 
         //
         // Cursor is dead
@@ -205,11 +225,15 @@ class Cursor extends EventEmitter {
         //
         // Cursor was is open, need to fire GETMORE command
         co(function*() {
-          var r = yield self.db.command({
+          // Create getMore additional options dictionary
+          var commandOptions = filterOptions(self.options, ['batchSize', 'maxTimeMS']);
+
+          // Execute the command
+          var r = yield self.db.command(Object.assign({
             getMore: self.collection.namespace,
             cursorId: self.cursorId,
             connection: self.connection
-          }, {fullResult:true});
+          }, commandOptions), {fullResult:true});
 
           // Get the connection identifier
           self.connection = r.connection;
@@ -246,6 +270,12 @@ class Cursor extends EventEmitter {
       co(function*() {
         var docs = [];
 
+        // Filter out all command options
+        var commandOptions = filterOptions(self.options, ['readPreference', 'sort', 'projection'
+          , 'hint', 'skip', 'limit', 'batchSize', 'singleBatch', 'comment', 'maxScan', 'maxTimeMS'
+          , 'readConcern', 'max', 'min', 'returnKey', 'showRecordId', 'snapshot', 'tailable'
+          , 'oplogReply', 'noCursorTimeout', 'awaitData', 'allowPartialResults']);
+
         // Execute the find command
         var r = yield self.db.command({
           find: self.collection.namespace,
@@ -264,11 +294,17 @@ class Cursor extends EventEmitter {
 
         // Execute getMore's until we are done
         while(true) {
-          var r1 = yield self.db.command({
+          // Create getMore additional options dictionary
+          var commandOptions = {};
+          if(self.options.batchSize) commandOptions.batchSize = self.options.batchSize;
+          if(self.options.maxTimeMS) commandOptions.maxTimeMS = self.options.maxAwaitTimeMS;
+
+          // Execute the getMore command
+          var r1 = yield self.db.command(Object.assign({
             getMore: self.collection.namespace,
             cursorId: cursorId.toJSON(),
             connection: connection
-          }, {fullResult:true});
+          }, commandOptions), {fullResult:true});
 
           // Get the connection identifier
           var connection = r1.connection;
@@ -311,6 +347,16 @@ class Cursor extends EventEmitter {
       }).catch(reject);
     });
   }
+}
+
+var filterOptions = function(options, fields) {
+  var object = {};
+
+  for(var i = 0; i < fields.length; i++) {
+    if(options[fields[i]]) object[fields[i]] = options[fields[i]];
+  }
+
+  return object;
 }
 
 module.exports = Cursor;

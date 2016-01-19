@@ -15,7 +15,7 @@ var MongoBrowserClient = require('../../client/mongo_client'),
   SocketIOClientTransport = require('../../client/transports/socket_io_transport'),
   ioClient = require('socket.io-client');
 
-var createServer = function(options) {
+var createServer = function() {
   return new Promise(function(resolve, reject) {
     co(function*() {
       var httpServer = require('http').createServer(function(req, res) {
@@ -23,14 +23,9 @@ var createServer = function(options) {
       });
 
       // Get the MongoClient
-      var client = yield MongoClient.connect('mongodb://localhost:27017/test', {
-        db: {
-          promoteLongs: false
-        }
-      });
-
+      var client = yield MongoClient.connect('mongodb://localhost:27017/test');
       // Add to the server
-      var mongoDBserver = new Server(client, options || {});
+      var mongoDBserver = new Server(client, {});
       // Add a socket transport
       mongoDBserver.registerHandler(new SocketIOTransport(httpServer));
 
@@ -65,67 +60,8 @@ var createServer = function(options) {
 }
 
 describe('Integration', function() {
-  describe('MongoDB Aggregation Cursor', function() {
-    it('correctly peform aggregation iteration using toArray and raw', function(done) {
-      co(function*() {
-        // Start the server manager
-        var manager = new ServerManager('mongod', {
-          dbpath: path.join(path.resolve('db'), f("data-%d", 27017)),
-          setParameter: ['enableTestCommands=1']
-        });
-
-        // Start a MongoDB instance
-        yield manager.purge();
-        yield manager.start();
-
-        //
-        // Server connection
-        //
-
-        var object = yield createServer({raw:true});
-        var mongoDBserver = object.mongoDBserver;
-        var dbClient = object.client;
-        var httpServer = object.httpServer;
-
-        //
-        // Client connection
-        //
-
-        // Create an instance
-        var client = new MongoBrowserClient(new SocketIOClientTransport(ioClient.connect, {}));
-
-        // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080');
-        // Create documents
-        var insertDocs = []; for(var i = 0; i < 105; i++) insertDocs.push({a:i});
-
-        // Perform an insert
-        var result = yield connectedClient.db('test').collection('tests').insertMany(insertDocs, {w:1});
-        assert.equal(105, result.insertedCount);
-        assert.equal(105, Object.keys(result.insertedIds).length);
-
-        var s = new Date().getTime();
-        // Iterate over all the cursors
-        var docs = yield connectedClient.db('test').collection('tests').aggregate([{$match: {}}]).toArray();
-        var e = new Date().getTime();
-        // console.log("==================== time ms :: " + (e - s));
-        // Assert the values
-        assert.equal(105, docs.length);
-
-        // Shut down the
-        httpServer.close();
-        // Shut down MongoDB connection
-        dbClient.close();
-        // Shut down MongoDB instance
-        yield manager.stop();
-
-        done();
-      }).catch(function(e) {
-        console.log(e.stack)
-      });
-    });
-
-    it('correctly peform aggregation iteration using toArray and no raw', function(done) {
+  describe('MongoDB API Connections', function() {
+    it('correctly connect', function(done) {
       co(function*() {
         // Start the server manager
         var manager = new ServerManager('mongod', {
@@ -155,21 +91,6 @@ describe('Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:8080');
-        // Create documents
-        var insertDocs = []; for(var i = 0; i < 105; i++) insertDocs.push({a:i});
-
-        // Perform an insert
-        var result = yield connectedClient.db('test').collection('tests').insertMany(insertDocs, {w:1});
-        assert.equal(105, result.insertedCount);
-        assert.equal(105, Object.keys(result.insertedIds).length);
-
-        var s = new Date().getTime();
-        // Iterate over all the cursors
-        var docs = yield connectedClient.db('test').collection('tests').aggregate([{$match: {}}]).toArray();
-        var e = new Date().getTime();
-        // console.log("==================== time ms :: " + (e - s));
-        // Assert the values
-        assert.equal(105, docs.length);
 
         // Shut down the
         httpServer.close();
@@ -184,7 +105,7 @@ describe('Integration', function() {
       });
     });
 
-    it('correctly peform aggregate iteration using hasNext and next with raw', function(done) {
+    it('correctly peform insertOne', function(done) {
       co(function*() {
         // Start the server manager
         var manager = new ServerManager('mongod', {
@@ -200,7 +121,7 @@ describe('Integration', function() {
         // Server connection
         //
 
-        var object = yield createServer({raw:true});
+        var object = yield createServer();
         var mongoDBserver = object.mongoDBserver;
         var dbClient = object.client;
         var httpServer = object.httpServer;
@@ -214,28 +135,10 @@ describe('Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:8080');
-        // Create documents
-        var insertDocs = []; for(var i = 0; i < 105; i++) insertDocs.push({a:i});
-
         // Perform an insert
-        var result = yield connectedClient.db('test').collection('tests').insertMany(insertDocs, {w:1});
-        assert.equal(105, result.insertedCount);
-        assert.equal(105, Object.keys(result.insertedIds).length);
-
-        var docs = [];
-        var cursor = connectedClient.db('test').collection('tests').find({});
-
-        var s = new Date().getTime();
-        // Iterate over all the cursors
-        while(yield cursor.hasNext()) {
-          docs.push(yield cursor.next());
-        }
-
-        var e = new Date().getTime();
-        // console.log("==================== time ms :: " + (e - s));
-
-        // Assert the values
-        assert.equal(105, docs.length);
+        var result = yield connectedClient.db('test').collection('tests').insertOne({a:1}, {w:1});
+        assert.equal(1, result.insertedCount);
+        assert.equal(1, result.insertedIds.length);
 
         // Shut down the
         httpServer.close();
@@ -250,7 +153,54 @@ describe('Integration', function() {
       });
     });
 
-    it('correctly peform cursor iteration using hasNext and next with without raw', function(done) {
+    it('correctly peform insertMany', function(done) {
+      co(function*() {
+        // Start the server manager
+        var manager = new ServerManager('mongod', {
+          dbpath: path.join(path.resolve('db'), f("data-%d", 27017)),
+          setParameter: ['enableTestCommands=1']
+        });
+
+        // Start a MongoDB instance
+        yield manager.purge();
+        yield manager.start();
+
+        //
+        // Server connection
+        //
+
+        var object = yield createServer();
+        var mongoDBserver = object.mongoDBserver;
+        var dbClient = object.client;
+        var httpServer = object.httpServer;
+
+        //
+        // Client connection
+        //
+
+        // Create an instance
+        var client = new MongoBrowserClient(new SocketIOClientTransport(ioClient.connect, {}));
+
+        // Attempt to connect
+        var connectedClient = yield client.connect('http://localhost:8080');
+        // Perform an insert
+        var result = yield connectedClient.db('test').collection('tests').insertMany([{a:1}, {a:2}], {w:1});
+        assert.equal(2, result.insertedCount);
+        assert.equal(2, Object.keys(result.insertedIds).length);
+        // Shut down the
+        httpServer.close();
+        // Shut down MongoDB connection
+        dbClient.close();
+        // Shut down MongoDB instance
+        yield manager.stop();
+
+        done();
+      }).catch(function(e) {
+        console.log(e.stack)
+      });
+    });
+
+    it('correctly peform query iteration using stream', function(done) {
       co(function*() {
         // Start the server manager
         var manager = new ServerManager('mongod', {
@@ -290,26 +240,24 @@ describe('Integration', function() {
 
         var docs = [];
         var cursor = connectedClient.db('test').collection('tests').find({});
+        cursor.on('data', function(item) {
+          docs.push(item);
+        });
 
-        var s = new Date().getTime();
-        // Iterate over all the cursors
-        while(yield cursor.hasNext()) {
-          docs.push(yield cursor.next());
-        }
-        var e = new Date().getTime();
-        // console.log("==================== time ms :: " + (e - s));
+        cursor.on('end', function(item) {
+          co(function*() {
+            // Assert the values
+            assert.equal(105, docs.length);
 
-        // Assert the values
-        assert.equal(105, docs.length);
-
-        // Shut down the
-        httpServer.close();
-        // Shut down MongoDB connection
-        dbClient.close();
-        // Shut down MongoDB instance
-        yield manager.stop();
-
-        done();
+            // Shut down the
+            httpServer.close();
+            // Shut down MongoDB connection
+            dbClient.close();
+            // Shut down MongoDB instance
+            yield manager.stop();
+            done();
+          });
+        });
       }).catch(function(e) {
         console.log(e.stack)
       });

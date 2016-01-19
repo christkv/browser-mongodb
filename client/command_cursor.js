@@ -138,11 +138,15 @@ class CommandCursor extends EventEmitter {
         //
         // Cursor was is open, need to fire GETMORE command
         co(function*() {
-          var r = yield self.db.command({
+          // Create getMore additional options dictionary
+          var commandOptions = filterOptions(self.options, ['batchSize', 'maxTimeMS']);
+
+          // Execute the command
+          var r = yield self.db.command(Object.assign({
             getMore: self.collection.namespace,
             cursorId: self.cursorId,
             connection: self.connection
-          }, {fullResult:true});
+          }, commandOptions), {fullResult:true});
 
           // Get the connection identifier
           self.connection = r.connection;
@@ -194,11 +198,15 @@ class CommandCursor extends EventEmitter {
 
         // Execute getMore's until we are done
         while(true) {
-          var r1 = yield self.db.command({
+          // Create getMore additional options dictionary
+          var commandOptions = filterOptions(self.options, ['batchSize', 'maxTimeMS']);
+
+          // Execute the command
+          var r1 = yield self.db.command(Object.assign({
             getMore: self.collection.namespace,
             cursorId: cursorId.toJSON(),
             connection: connection
-          }, {fullResult:true});
+          }, commandOptions), {fullResult:true});
 
           // Get the connection identifier
           var connection = r1.connection;
@@ -241,6 +249,16 @@ class CommandCursor extends EventEmitter {
       }).catch(reject);
     });
   }
+}
+
+var filterOptions = function(options, fields) {
+  var object = {};
+
+  for(var i = 0; i < fields.length; i++) {
+    if(options[fields[i]]) object[fields[i]] = options[fields[i]];
+  }
+
+  return object;
 }
 
 module.exports = CommandCursor;

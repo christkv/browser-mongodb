@@ -18,6 +18,8 @@
         "type": "string"
       }]
     },
+    "liveQuery": { "type": "boolean" },
+    "liveQueryId": { "type": "integer" },
     "skip": { "type": "integer" },
     "limit": { "type": "integer" },
     "batchSize": { "type": "integer" },

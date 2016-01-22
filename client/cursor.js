@@ -4,6 +4,9 @@ var Promise = require('./util').Promise,
   EventEmitter = require('./event_emitter'),
   co = require('co');
 
+// Contains the global liveQuery id used to associate queries
+var liveQueryId = 0;
+
 class Cursor extends EventEmitter {
   constructor(db, collection, query) {
     super();
@@ -71,6 +74,7 @@ class Cursor extends EventEmitter {
 
   noCursorTimeout() {
     this.options.noCursorTimeout = true;
+    return this;
   }
 
   /**
@@ -79,9 +83,10 @@ class Cursor extends EventEmitter {
    * @method
    * @return {Cursor} returns Cursor
    */
-  listen() {
+  liveQuery() {
     // Set the listen flag on the query
-    this.options.listen = true;
+    this.options.liveQuery = true;
+    this.options.liveQueryId = liveQueryId++;
     // Return the cursor
     return this;
   }
@@ -172,7 +177,7 @@ class Cursor extends EventEmitter {
           var commandOptions = filterOptions(self.options, ['readPreference', 'sort', 'projection'
             , 'hint', 'skip', 'limit', 'batchSize', 'singleBatch', 'comment', 'maxScan', 'maxTimeMS'
             , 'readConcern', 'max', 'min', 'returnKey', 'showRecordId', 'snapshot', 'tailable'
-            , 'oplogReply', 'noCursorTimeout', 'awaitData', 'allowPartialResults']);
+            , 'oplogReply', 'noCursorTimeout', 'awaitData', 'allowPartialResults', "liveQuery", "liveQueryId"]);
 
           // Execute the find command
           var r = yield self.db.command(Object.assign({
@@ -274,13 +279,13 @@ class Cursor extends EventEmitter {
         var commandOptions = filterOptions(self.options, ['readPreference', 'sort', 'projection'
           , 'hint', 'skip', 'limit', 'batchSize', 'singleBatch', 'comment', 'maxScan', 'maxTimeMS'
           , 'readConcern', 'max', 'min', 'returnKey', 'showRecordId', 'snapshot', 'tailable'
-          , 'oplogReply', 'noCursorTimeout', 'awaitData', 'allowPartialResults']);
+          , 'oplogReply', 'noCursorTimeout', 'awaitData', 'allowPartialResults', 'liveQuery', "liveQueryId"]);
 
         // Execute the find command
-        var r = yield self.db.command({
+        var r = yield self.db.command(Object.assign({
           find: self.collection.namespace,
           filter: self.query
-        }, {fullResult:true});
+        }, commandOptions), {fullResult:true});
 
         // Get the connection identifier
         var connection = r.connection;
@@ -353,7 +358,7 @@ var filterOptions = function(options, fields) {
   var object = {};
 
   for(var i = 0; i < fields.length; i++) {
-    if(options[fields[i]]) object[fields[i]] = options[fields[i]];
+    if(options[fields[i]] != null) object[fields[i]] = options[fields[i]];
   }
 
   return object;

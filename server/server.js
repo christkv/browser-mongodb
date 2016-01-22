@@ -1,6 +1,8 @@
 "use strict"
 
-var ChannelHandler = require('./mongodb/handler');
+var ChannelHandler = require('./mongodb/handler'),
+  LiveQueryHandler = require('./live_query_handler'),
+  co = require('co');
 
 class Channel  {
   constructor(channel) {
@@ -26,8 +28,10 @@ class Server {
     this.liveConnections = {};
     this.channels = {};
 
+    // Create a live query instance
+    this.liveQueryHandler = new LiveQueryHandler(client, options);
     // Handles the actual translation
-    this.handler = new ChannelHandler(client, options);
+    this.handler = new ChannelHandler(client, this.liveQueryHandler, options);
   }
 
   registerHandler(handler) {
@@ -50,6 +54,28 @@ class Server {
     });
 
     return this;
+  }
+
+  connect() {
+    var self = this;
+
+    return new Promise(function(resolve, reject) {
+      co(function*() {
+        // console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ server 0")
+        var result = yield self.handler.ismaster();
+        // console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ server 1")
+        // console.dir(result)
+
+        // We support live queries
+        if(result.liveQuery) {
+        // console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ server 2")
+          yield self.liveQueryHandler.connect();
+        }
+        // console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ server 3")
+
+        resolve();
+      }).catch(reject);
+    });
   }
 
   channel(channel) {

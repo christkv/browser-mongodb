@@ -20,6 +20,7 @@ ERRORS.GENERAL_COMMAND_FAILURE = 2;
 ERRORS.GETMORE_COMMAND_FAILURE = 3;
 ERRORS.CURSOR_NOT_FOUND = 4;
 ERRORS.REPLACE_CONTAINS_OPERATORS = 5;
+ERRORS.LIVER_QUERY_ID_ILLEGAL = 6;
 
 // Used to identify errors in Raw messages
 var okFalse = new Buffer([1, 111, 107, 0, 0, 0, 0]);
@@ -59,8 +60,9 @@ var validators = createValidators([
 ]);
 
 class ChannelHandler {
-  constructor(client, options) {
+  constructor(client, liveQueryHandler, options) {
     this.client = client;
+    this.liveQueryHandler = liveQueryHandler;
     this.options = options || {};
     this.bson = new BSON.BSON();
   }
@@ -89,7 +91,7 @@ class ChannelHandler {
       } else if(op.deleteMany) {
         promise = self.delete(false, op);
       } else if(op.find) {
-        promise = self.find(op);
+        promise = self.find(op, connection);
       } else if(op.aggregate) {
         promise = self.aggregate(op);
       } else if(op.getMore) {
@@ -136,7 +138,6 @@ class ChannelHandler {
     var self = this;
     options = options || { promoteLong: false };
     options.raw = options.raw || self.options.raw || true;
-    // options.raw = false;
 
     return new Promise(function(resolve, reject) {
       co(function*() {
@@ -214,11 +215,10 @@ class ChannelHandler {
     });
   }
 
-  find(op, options) {
+  find(op, connection, options) {
     var self = this;
     options = options || { promoteLong: false };
     options.raw = options.raw || self.options.raw || true;
-    // options.raw = false;
 
     return new Promise(function(resolve, reject) {
       co(function*() {
@@ -231,9 +231,27 @@ class ChannelHandler {
         }
 
         // Split the name space
+        var ns = op.find;
         var parts = op.find.split('.');
         var db = parts.shift();
         var collection = parts.join('.');
+
+        console.log("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+        console.dir(op)
+
+        // Do we have a live query
+        var liveQuery = op.liveQuery || false;
+        var liveQueryId = op.liveQueryId;
+        // Remove the fields not compatible with the find command
+        delete op['liveQuery'];
+        delete op['liveQueryId'];
+
+        // If we don't have a liveQueryId error out
+        if(liveQuery && typeof liveQueryId != 'number') {
+          return reject({
+            ok:false, code: ERRORS.LIVER_QUERY_ID_ILLEGAL, message: 'liverQueryId not provided or not an integer', op: op
+          });
+        }
 
         // Do we have a read Preference specified
         if(op.readPreference) {
@@ -266,6 +284,11 @@ class ChannelHandler {
         // Create extended EJSON if don't have a raw query
         if(!options.raw) {
           result.documents[0] = JSON.parse(EJSON.stringify(result.documents[0]));
+        }
+
+        // Register the live query
+        if(liveQuery) {
+          self.liveQueryHandler.register(connection, ns, liveQueryId, op);
         }
 
         // Return response
@@ -344,13 +367,27 @@ class ChannelHandler {
   }
 
   ismaster(doc, options) {
+    var self = this;
     options = options || {};
 
     return new Promise(function(resolve, reject) {
-      resolve({
-        ok: true, insert:true, update:true, delete:true,
-        findAndModify:true, commands: ['ismaster'], listen: true
-      });
+      co(function*() {
+        var result = yield self.client.command({ismaster:true});
+        // Default liveQuery is off
+        var liveQuery = false;
+        // Did we receive a replicaset ismaster result
+        if(result.isreplicaset 
+          || result.ismaster != null
+          || result.secondary != null) {
+          liveQuery = true;
+        }
+
+        // Return the result
+        resolve({
+          ok: true, insert:true, update:true, delete:true,
+          findAndModify:true, commands: ['ismaster'], liveQuery: liveQuery
+        });
+      }).catch(reject);
     });
   }
 
@@ -397,6 +434,8 @@ class ChannelHandler {
 
         // Function to execute
         var result = yield self.client.db(db).collection(collection).replaceOne(query, update, commandOptions);
+
+
 
         // Final result
         var finalResult = {
@@ -513,6 +552,7 @@ class ChannelHandler {
           insertedCount: result.insertedCount,         
         };
 
+        // Merge in the inserted ids
         if(result.insertedId) finalResult.insertedIds = [result.insertedId];
         if(result.insertedIds) finalResult.insertedIds = result.insertedIds;
 

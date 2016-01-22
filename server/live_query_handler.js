@@ -10,44 +10,21 @@ class LiveQuery {
     this.namespace = namespace;
     this.id = id;
     this.connection = connection;
-    this.cmd = cmd;
+    this.filter = cmd;
   }
 }
 
-class LiveQueryHandler {
-  constructor(client, options) {
+class Dispatcher {
+  // Live queries, split by the name spaces
+  constructor(channel, client) {
+    this.channel = channel;
     this.client = client;
-    this.options = options || {};
-    this.local = null;
-    this.cursor = null;
-
-    // Tracked op log times
-    this.lastKnownOpTime = null;
-    this.lastKnownOpWriteTime = null;
-    
-    // State of live query handler
-    this.state = 'stopped';
-
-    // Default values if not set
-    if(!this.options.maxAwaitTimeMS) this.options.maxAwaitTimeMS = 3000;
-    if(!this.options.maxTimeMS) this.options.maxTimeMS = 10000;
-    if(!this.options.maxBackOffMS) this.options.maxBackOffMS = 10000;
-    if(!this.options.initialBackOffMS) this.options.initialBackOffMS = 100;
-
-    // Current backOffMS
-    this.currentBackOffMS = this.options.initialBackOffMS;
-
-    // Get the local db
-    this.collection = this.client.db('local').collection('oplog.rs');
-
-    // Live queries, split by the name spaces
     this.liveQueries = {};
   }
 
+  // Register
   register(connection, ns, liveQueryId, op) {
     var self = this;
-    console.log("--------------------------------------------------")
-    console.dir(op)
 
     // Connection closed perform clean up of live queries
     connection.on('close', function() {
@@ -70,7 +47,147 @@ class LiveQueryHandler {
 
     // Register the connection to our available live queries
     if(this.liveQueries[ns] == null) this.liveQueries[ns] = [];
-    this.liveQueries[ns].push(new LiveQuery(ns, liveQueryId, connection, find.filter));
+    // Add a new live query
+    this.liveQueries[ns].push(new LiveQuery(ns, liveQueryId, connection, op.filter));
+  }
+
+  // We got an update
+  insert(namespace, doc) {
+    // Do we have any live queries
+    if(this.liveQueries[namespace]) {
+      // console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@ found live queries")
+    }
+  }
+
+  // We got an update
+  update(namespace, doc) {
+    var self = this;
+
+    // Do we have any live queries
+    if(this.liveQueries[namespace]) {
+      // console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@ found live queries")
+      // console.dir(this.liveQueries[namespace])
+      // console.dir(doc)
+      var queries = this.liveQueries[namespace];
+
+      // Iterate over all available queries
+      for(var i = 0; i < queries.length; i++) {
+        var query = queries[i];
+        var filter = query.filter;
+        var match = false;
+
+          // console.log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ WRITE MATCH query:: "+ match)
+        // console.dir(query)
+
+        // Iterate over all the fields in the filter
+        for(var name in filter) {
+          console.log(doc[name] + " = " + filter[name])
+          if(doc[name] == filter[name]) {
+            match = true;
+            break;
+          }
+        }
+
+          // console.log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ WRITE MATCH :: "+ match)
+
+        // We have a match, let's fire off the change message
+        if(match) {
+          // console.log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ WRITE")
+          query.connection.write(self.channel, {
+            type: 'changed',
+            namespace: query.namespace,
+            cursorId: query.id,
+            doc: doc
+          });
+        }
+      }
+    }
+  }
+
+  // We got an update
+  delete(namespace, doc) {
+
+  }
+
+  // dispatch
+  dispatch(op) {
+    var self = this;
+
+    co(function*() {
+      // console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! dispatch")
+      // console.dir(op)
+      var namespace = op.ns;
+      var oplogVersion = op.v;
+      var operationType = op.op;
+      var object1 = op.o;
+      var object2 = op.o2;
+
+      // console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! dispatch 1")
+      // Split up the namespace
+      var parts = namespace.split('.');
+      var db = parts.shift();
+      var collection = parts.join('.');
+      // console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! dispatch 2 :: " + operationType)
+
+      // Insert operation
+      if(operationType == 'i') {
+        // console.log("-------------------------------- INSERT")
+
+      } else if(operationType == 'u') {
+        // console.log("-------------------------------- UPDATE")
+        // console.log(db)
+        // console.log(collection)
+        // console.dir(object2._id)
+        // Update operation, we need to fetch the whole document as we
+        // don't have enough fields to perform an evaluation
+        var doc = yield self.client.db(db).collection(collection).findOne({_id: object2._id});
+        // console.log("-------------------------------- UPDATE 2")
+        // Match the document with the current live queries
+        self.update(namespace, doc);
+      } else if(operationType == 'd') {
+      // Delete operation
+        // console.log("-------------------------------- DELETE")
+
+      }
+    }).catch(function(err) {
+      console.log(err.stack)
+    });
+  }
+}
+
+class LiveQueryHandler {
+  constructor(channel, client, options) {
+    this.client = client;
+    this.options = options || {};
+    this.local = null;
+    this.cursor = null;
+    this.channel = channel;
+
+    // Tracked op log times
+    this.lastKnownOpTime = null;
+    this.lastKnownOpWriteTime = null;
+    
+    // State of live query handler
+    this.state = 'stopped';
+
+    // Default values if not set
+    if(!this.options.maxAwaitTimeMS) this.options.maxAwaitTimeMS = 3000;
+    if(!this.options.maxTimeMS) this.options.maxTimeMS = 10000;
+    if(!this.options.maxBackOffMS) this.options.maxBackOffMS = 10000;
+    if(!this.options.initialBackOffMS) this.options.initialBackOffMS = 100;
+
+    // Current backOffMS
+    this.currentBackOffMS = this.options.initialBackOffMS;
+
+    // Get the local db
+    this.collection = this.client.db('local').collection('oplog.rs');
+
+    // Contains the data
+    this.dispatcher = new Dispatcher(channel, this.client);
+  }
+
+  register(connection, ns, liveQueryId, op) {
+    this.dispatcher.register(connection, ns, liveQueryId, op);
   }
 
   connect() {
@@ -125,7 +242,7 @@ class LiveQueryHandler {
     // Connect to the upload
     var connectToOplog = function(self) {     
       co(function*() {
-        console.log("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% connectToOplog")
+        // console.log("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% connectToOplog")
         // console.dir({ts: {$gte: self.lastKnownOpTime.ts }})
         // console.dir(self.options)
         // var docs = yield self.client.db('local').collection('oplog.rs').find({ts: {$gte: self.lastKnownOpTime.ts }}).toArray();
@@ -133,7 +250,7 @@ class LiveQueryHandler {
         // console.dir(docs)
 
         // Execute the initial oplog query
-        self.cursor = self.collection.find({ts: {$gte: self.lastKnownOpTime.ts }})
+        self.cursor = self.collection.find({ts: {$gt: self.lastKnownOpTime.ts }})
             .sort({$natural: 1})
             .addCursorFlag('oplogReplay', true)
             .addCursorFlag('noCursorTimeout', true)
@@ -151,6 +268,8 @@ class LiveQueryHandler {
           self.lastKnownOpTime = {ts: data.ts, t: data.t};
           // Reset back off time
           self.currentBackOffMS = self.options.initialBackOffMS;
+          // We will now process the actual operation
+          self.dispatcher.dispatch(data);
         });
 
         // Handle oplog errors
@@ -189,11 +308,11 @@ class LiveQueryHandler {
           ts: Timestamp.fromNumber(1), t: 1
         } : result;
 
-        console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ GET FIRST")
-        console.dir(self.lastKnownOpTime)
+        // console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ GET FIRST")
+        // console.dir(self.lastKnownOpTime)
         // Initiate the cursor
         connectToOplog(self);
-        console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ GET FIRST")
+        // console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ GET FIRST")
         // Set to running
         self.state = 'running';
         // Resolve

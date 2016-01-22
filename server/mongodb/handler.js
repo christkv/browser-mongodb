@@ -20,7 +20,8 @@ ERRORS.GENERAL_COMMAND_FAILURE = 2;
 ERRORS.GETMORE_COMMAND_FAILURE = 3;
 ERRORS.CURSOR_NOT_FOUND = 4;
 ERRORS.REPLACE_CONTAINS_OPERATORS = 5;
-ERRORS.LIVER_QUERY_ID_ILLEGAL = 6;
+ERRORS.LIVE_QUERY_ID_ILLEGAL = 6;
+ERRORS.NO_LIVE_QUERY_CHANNEL_HANDLER = 7;
 
 // Used to identify errors in Raw messages
 var okFalse = new Buffer([1, 111, 107, 0, 0, 0, 0]);
@@ -60,11 +61,15 @@ var validators = createValidators([
 ]);
 
 class ChannelHandler {
-  constructor(client, liveQueryHandler, options) {
+  constructor(client, options) {
     this.client = client;
-    this.liveQueryHandler = liveQueryHandler;
     this.options = options || {};
     this.bson = new BSON.BSON();
+    this.liveQueryHandlers = {};
+  }
+
+  registerLiveQueryChannel(channel, handler) {
+    this.liveQueryHandlers[channel] = handler;
   }
 
   handle(connection, channel, doc) {
@@ -91,7 +96,7 @@ class ChannelHandler {
       } else if(op.deleteMany) {
         promise = self.delete(false, op);
       } else if(op.find) {
-        promise = self.find(op, connection);
+        promise = self.find(channel, op, connection);
       } else if(op.aggregate) {
         promise = self.aggregate(op);
       } else if(op.getMore) {
@@ -215,7 +220,7 @@ class ChannelHandler {
     });
   }
 
-  find(op, connection, options) {
+  find(channel, op, connection, options) {
     var self = this;
     options = options || { promoteLong: false };
     options.raw = options.raw || self.options.raw || true;
@@ -249,7 +254,14 @@ class ChannelHandler {
         // If we don't have a liveQueryId error out
         if(liveQuery && typeof liveQueryId != 'number') {
           return reject({
-            ok:false, code: ERRORS.LIVER_QUERY_ID_ILLEGAL, message: 'liverQueryId not provided or not an integer', op: op
+            ok:false, code: ERRORS.LIVE_QUERY_ID_ILLEGAL, message: 'liveQueryId not provided or not an integer', op: op
+          });
+        }
+
+        // If we don't have a liveQueryId error out
+        if(liveQuery && self.liveQueryHandlers[channel] == null) {
+          return reject({
+            ok:false, code: ERRORS.NO_LIVE_QUERY_CHANNEL_HANDLER, message: 'no liveQuery channel handler registered', op: op
           });
         }
 
@@ -288,7 +300,7 @@ class ChannelHandler {
 
         // Register the live query
         if(liveQuery) {
-          self.liveQueryHandler.register(connection, ns, liveQueryId, op);
+          self.liveQueryHandlers[channel].register(connection, ns, liveQueryId, op);
         }
 
         // Return response

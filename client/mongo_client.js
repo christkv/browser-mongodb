@@ -46,8 +46,11 @@ class MongoClient {
 
         // Listen to all mongodb socket information
         self.transport.onChannel(self.channel, function(data) {
-          // console.log("\n\n\n!!!!!!!!!!!!!!!!!!!!!!!!! Client received data")
-          // console.dir(data)
+          if(data.type =='changed') {
+            console.log("\n\n\n!!!!!!!!!!!!!!!!!!!!!!!!! Client received data")
+            console.dir(data)
+          }
+
           if(data.ok != null && !data.ok) {
             self.store.call(data._id, new MongoError(data), undefined);
           } else if(data.ok != null && data.ok && data.change) {

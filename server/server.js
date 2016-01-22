@@ -28,10 +28,8 @@ class Server {
     this.liveConnections = {};
     this.channels = {};
 
-    // Create a live query instance
-    this.liveQueryHandler = new LiveQueryHandler(client, options);
     // Handles the actual translation
-    this.handler = new ChannelHandler(client, this.liveQueryHandler, options);
+    this.handler = new ChannelHandler(client, options);
   }
 
   registerHandler(handler) {
@@ -69,7 +67,12 @@ class Server {
         // We support live queries
         if(result.liveQuery) {
         // console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ server 2")
-          yield self.liveQueryHandler.connect();
+          // yield self.liveQueryHandler.connect();
+          // if(self.handler.)
+          for(var name in self.handler.liveQueryHandlers) {
+            console.log("-------------------------------- name = " + name)
+            yield self.handler.liveQueryHandlers[name].connect();
+          }
         }
         // console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ server 3")
 
@@ -78,10 +81,14 @@ class Server {
     });
   }
 
-  channel(channel) {
+  channel(channel, options) {
     var self = this;
+    options = options || {};
     // Record the channel handlers
     this.channels[channel] = new Channel(channel);
+
+    // Register live query handler
+    self.handler.registerLiveQueryChannel(channel, new LiveQueryHandler(channel, self.client, options));
 
     // Add the actual handler for the channel
     this.channels[channel].handler = function(connection, channel, obj) {

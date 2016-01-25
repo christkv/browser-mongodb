@@ -24,6 +24,10 @@ class Cursor extends EventEmitter {
     this.options = {};
   }
 
+  get liveQueryId() {
+    return this.options.liveQueryId;
+  }
+
   //
   // Properties implementation
   //
@@ -194,8 +198,8 @@ class Cursor extends EventEmitter {
           self.cursorId = r.cursor.id;
 
           // Are we listening
-          if(self.options.listen && self.cursorId != null) {
-            self.db.store.listen(self);
+          if(self.options.liveQuery && self.options.liveQueryId != null) {
+            self.db.store.liveQuery(self);
           }
 
           // Return the first document
@@ -290,6 +294,11 @@ class Cursor extends EventEmitter {
         // Get the connection identifier
         var connection = r.connection;
         r = r.result;
+
+        // Are we listening
+        if(self.options.liveQuery && self.options.liveQueryId != null) {
+          self.db.store.liveQuery(self);
+        }
 
         // Get the documents, server format or API format
         docs = docs.concat(r.cursor.firstBatch);

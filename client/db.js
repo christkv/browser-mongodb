@@ -1,7 +1,7 @@
 "use strict"
 
 var Collection = require('./collection'),
-  inflate = require('./util').inflate;
+  serialize = require('./util').serialize;
 
 class Db {
   constructor(name, channel, transport, store) {
@@ -32,7 +32,7 @@ class Db {
       // Final batch op sent to the server
       var cmd = {
         _id: self.store.id(),
-        op: inflate(op)
+        op: serialize(op)
       };
 
       // Add a listener to the store

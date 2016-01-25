@@ -3,14 +3,17 @@
 var co = require('co'),
   Timestamp = require('mongodb').Timestamp,
   Long = require('mongodb').Long,
+  crypto = require('crypto'),
+  EJSON = require('mongodb-extended-json'),
+  Matcher = require('./mongodb/matcher'),
   listener = require('mongodb').instrument();
 
 class LiveQuery {
-  constructor(namespace, id, connection, cmd) {
+  constructor(namespace, id, connection, filter) {
     this.namespace = namespace;
     this.id = id;
     this.connection = connection;
-    this.filter = cmd;
+    this.filter = new Matcher(filter);
   }
 }
 
@@ -53,51 +56,60 @@ class Dispatcher {
 
   // We got an update
   insert(namespace, doc) {
-    // Do we have any live queries
-    if(this.liveQueries[namespace]) {
-      // console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@ found live queries")
-    }
-  }
-
-  // We got an update
-  update(namespace, doc) {
     var self = this;
 
     // Do we have any live queries
     if(this.liveQueries[namespace]) {
-      // console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@ found live queries")
-      // console.dir(this.liveQueries[namespace])
-      // console.dir(doc)
       var queries = this.liveQueries[namespace];
 
       // Iterate over all available queries
       for(var i = 0; i < queries.length; i++) {
         var query = queries[i];
         var filter = query.filter;
-        var match = false;
 
-          // console.log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ WRITE MATCH query:: "+ match)
-        // console.dir(query)
-
-        // Iterate over all the fields in the filter
-        for(var name in filter) {
-          console.log(doc[name] + " = " + filter[name])
-          if(doc[name] == filter[name]) {
-            match = true;
-            break;
-          }
-        }
-
-          // console.log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ WRITE MATCH :: "+ match)
+        // Turn document into EJSON for the matching
+        doc = EJSON.serialize(doc);
 
         // We have a match, let's fire off the change message
-        if(match) {
-          // console.log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ WRITE")
+        if(filter.documentMatches(doc)) {
           query.connection.write(self.channel, {
+            ok: true,
+            type: 'added',
+            namespace: query.namespace,
+            id: query.id,
+            doc: doc._id,
+            fields: doc
+          });
+        }
+      }
+    }
+  }
+
+  // We got an update
+  update(namespace, doc, fields) {
+    var self = this;
+
+    // Do we have any live queries
+    if(this.liveQueries[namespace]) {
+      var queries = this.liveQueries[namespace];
+
+      // Iterate over all available queries
+      for(var i = 0; i < queries.length; i++) {
+        var query = queries[i];
+        var filter = query.filter;
+
+        // Turn document into EJSON for the matching
+        doc = EJSON.serialize(doc);
+
+        // We have a match, let's fire off the change message
+        if(filter.documentMatches(doc)) {
+          query.connection.write(self.channel, {
+            ok: true,
             type: 'changed',
             namespace: query.namespace,
-            cursorId: query.id,
-            doc: doc
+            id: query.id,
+            doc: doc._id,
+            fields: fields
           });
         }
       }
@@ -106,7 +118,32 @@ class Dispatcher {
 
   // We got an update
   delete(namespace, doc) {
+    var self = this;
 
+    // Do we have any live queries
+    if(this.liveQueries[namespace]) {
+      var queries = this.liveQueries[namespace];
+
+      // Iterate over all available queries
+      for(var i = 0; i < queries.length; i++) {
+        var query = queries[i];
+        var filter = query.filter;
+
+        // Turn document into EJSON for the matching
+        doc = EJSON.serialize(doc);
+
+        // We have a match, let's fire off the change message
+        if(filter.documentMatches(doc)) {
+          query.connection.write(self.channel, {
+            ok: true,
+            type: 'removed',
+            namespace: query.namespace,
+            id: query.id,
+            doc: doc._id
+          });
+        }
+      }
+    }
   }
 
   // dispatch
@@ -114,40 +151,28 @@ class Dispatcher {
     var self = this;
 
     co(function*() {
-      // console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! dispatch")
-      // console.dir(op)
       var namespace = op.ns;
       var oplogVersion = op.v;
       var operationType = op.op;
       var object1 = op.o;
       var object2 = op.o2;
 
-      // console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! dispatch 1")
       // Split up the namespace
       var parts = namespace.split('.');
       var db = parts.shift();
       var collection = parts.join('.');
-      // console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! dispatch 2 :: " + operationType)
 
       // Insert operation
       if(operationType == 'i') {
-        // console.log("-------------------------------- INSERT")
-
+        self.insert(namespace, op.o);
       } else if(operationType == 'u') {
-        // console.log("-------------------------------- UPDATE")
-        // console.log(db)
-        // console.log(collection)
-        // console.dir(object2._id)
         // Update operation, we need to fetch the whole document as we
         // don't have enough fields to perform an evaluation
         var doc = yield self.client.db(db).collection(collection).findOne({_id: object2._id});
-        // console.log("-------------------------------- UPDATE 2")
         // Match the document with the current live queries
-        self.update(namespace, doc);
+        self.update(namespace, doc, op.o);
       } else if(operationType == 'd') {
-      // Delete operation
-        // console.log("-------------------------------- DELETE")
-
+        self.delete(namespace, op.o);
       }
     }).catch(function(err) {
       console.log(err.stack)
@@ -192,7 +217,6 @@ class LiveQueryHandler {
 
   connect() {
     var self = this;
-    // console.log("####################################### 0 LiveQueryHandler connect")
 
     // Add a handler
     listener.on('succeeded', function(event) {
@@ -200,8 +224,6 @@ class LiveQueryHandler {
       if(event.commandName == 'insert'
         || event.commandName == 'update'
         || event.commandName == 'delete') {
-        // console.log("APM -- write operation")
-        // console.dir(event.reply)
 
         if(event.reply.opTime) {
           var opTime = event.reply.opTime;
@@ -233,22 +255,12 @@ class LiveQueryHandler {
             }
           }
         }
-      } else if(event.commandName == 'ismaster') {
-        // console.log("APM -- ismaster")
-        // console.dir(event)
       }
     });
 
     // Connect to the upload
     var connectToOplog = function(self) {
       co(function*() {
-        // console.log("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% connectToOplog")
-        // console.dir({ts: {$gte: self.lastKnownOpTime.ts }})
-        // console.dir(self.options)
-        // var docs = yield self.client.db('local').collection('oplog.rs').find({ts: {$gte: self.lastKnownOpTime.ts }}).toArray();
-        // console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ TRY")
-        // console.dir(docs)
-
         // Execute the initial oplog query
         self.cursor = self.collection.find({ts: {$gt: self.lastKnownOpTime.ts }})
             .sort({$natural: 1})
@@ -262,8 +274,6 @@ class LiveQueryHandler {
 
         // Handle oplog entries
         self.cursor.on('data', function(data) {
-          // console.log("@@@@@@@@@@@@@@@@@@ DATA")
-          // console.dir(data)
           // Store last Known opTime for reconnects
           self.lastKnownOpTime = {ts: data.ts, t: data.t};
           // Reset back off time
@@ -274,21 +284,16 @@ class LiveQueryHandler {
 
         // Handle oplog errors
         self.cursor.on('error', function(err) {
-          // console.log("@@@@@@@@@@@@@@@@@@ ERROR")
-          // console.dir(err)
         });
 
         self.cursor.on('end', function() {
-            // console.log("@@@@@@@@@@@@@@@@@@@@@@@@@ END 0")
           setTimeout(function() {
-            // console.log("@@@@@@@@@@@@@@@@@@@@@@@@@ END 1")
             self.currentBackOffMS = self.currentBackOffMS * 2;
 
             // Reset the back off
             if(self.currentBackOffMS > self.options.maxBackOffMS) {
               self.currentBackOffMS = self.options.initialBackOffMS;
             }
-            // console.log("@@@@@@@@@@@@@@@@@@@@@@@@@ END 2 :: " + self.currentBackOffMS)
 
             connectToOplog(self);
           }, self.currentBackOffMS);
@@ -308,11 +313,8 @@ class LiveQueryHandler {
           ts: Timestamp.fromNumber(1), t: 1
         } : result;
 
-        // console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ GET FIRST")
-        // console.dir(self.lastKnownOpTime)
         // Initiate the cursor
         connectToOplog(self);
-        // console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ GET FIRST")
         // Set to running
         self.state = 'running';
         // Resolve

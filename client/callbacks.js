@@ -49,15 +49,13 @@ class Callbacks {
   // Infrastructure allowing us to listen to changing queries
   //
   update(object) {
-    for(var i = 0; i < object.updates.length; i++) {
-      var updateObject = object.updates[i];
-
-      // Do we have a cursor matching the update
-      if(this.cursors[updateObject.cursorId]) {
-        // Emit added/changed/removed event for the updateObject
-        this.cursors[updateObject.cursorId].emit(updateObject.type,
-          updateObject.doc._id,
-          updateObject.doc.fields);
+    // Do we have a cursor matching the update
+    // Emit added/changed/removed event for the updateObject
+    if(this.cursors[object.id]) {
+      if(object.type == 'changed' || object.type == 'added') {
+        this.cursors[object.id].emit(object.type, object.doc, object.fields);
+      } else if(object.type == 'removed') {
+        this.cursors[object.id].emit(object.type, object.doc);
       }
     }
 
@@ -66,8 +64,8 @@ class Callbacks {
     //  - Send killcursors commands
   }
 
-  listen(cursor) {
-    this.cursors[cursor.cursorId] = cursor;
+  liveQuery(cursor) {
+    this.cursors[cursor.liveQueryId] = cursor;
   }
 
   unlisten(cursor) {

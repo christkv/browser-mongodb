@@ -87,7 +87,7 @@ Item.prototype.run = function () {
 };
 
 // Deflate
-var inflate = function(doc) {
+var serialize = function(doc) {
   var obj = {};
 
   for(var name in doc) {
@@ -138,7 +138,7 @@ var inflate = function(doc) {
     } else if(doc[name] instanceof Code) {
       obj[name] = {
         $code: doc[name].code.toString(),
-        $scope: inflate(doc[name].scope)
+        $scope: serialize(doc[name].scope)
       }
     } else if(doc[name] instanceof Double) {
       obj[name] = {
@@ -152,10 +152,10 @@ var inflate = function(doc) {
       obj[name] = [];
 
       for(var i = 0; i < doc[name].length; i++) {
-        obj[name][i] = inflate(doc[name][i]);
+        obj[name][i] = serialize(doc[name][i]);
       }
     } else if(doc[name] != null && typeof doc[name] == 'object') {
-      obj[name] = inflate(doc[name]);
+      obj[name] = serialize(doc[name]);
     } else {
       obj[name] = doc[name];
     }
@@ -167,5 +167,5 @@ var inflate = function(doc) {
 module.exports = {
   Promise: Promise,
   nextTick: nextTick,
-  inflate: inflate
+  serialize: serialize
 };

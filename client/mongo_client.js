@@ -46,15 +46,15 @@ class MongoClient {
 
         // Listen to all mongodb socket information
         self.transport.onChannel(self.channel, function(data) {
-          if(data.type =='changed') {
-            console.log("\n\n\n!!!!!!!!!!!!!!!!!!!!!!!!! Client received data")
-            console.dir(data)
-          }
+          // if(data.type) {
+          //   console.log("\n\n\n!!!!!!!!!!!!!!!!!!!!!!!!! Client received data")
+          //   console.dir(data)
+          // }
 
           if(data.ok != null && !data.ok) {
             self.store.call(data._id, new MongoError(data), undefined);
-          } else if(data.ok != null && data.ok && data.change) {
-            self.store.update(data);
+          } else if(data.ok != null && data.ok && typeof data.type == 'string') {
+            self.store.update(deserialize(data));
           } else if(data.ok != null && data.ok) {
             if(data.result.length) {
               data.result = deserializeFast(data.result);

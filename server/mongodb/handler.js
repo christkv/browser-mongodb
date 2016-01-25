@@ -227,6 +227,11 @@ class ChannelHandler {
 
     return new Promise(function(resolve, reject) {
       co(function*() {
+        // Keep reference to original op, Matcher requires extended JSON
+        var originalOp = op;
+        // Deflate the query
+        op = EJSON.deserialize(op);
+
         // Perform the validation
         var results = validators.find.validate(op);
         if(results.length > 0) {
@@ -297,7 +302,7 @@ class ChannelHandler {
 
         // Register the live query
         if(liveQuery) {
-          self.liveQueryHandlers[channel].register(connection, ns, liveQueryId, op);
+          self.liveQueryHandlers[channel].register(connection, ns, liveQueryId, originalOp);
         }
 
         // Return response

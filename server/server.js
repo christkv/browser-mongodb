@@ -59,22 +59,15 @@ class Server {
 
     return new Promise(function(resolve, reject) {
       co(function*() {
-        // console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ server 0")
         var result = yield self.handler.ismaster();
-        // console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ server 1")
-        // console.dir(result)
 
         // We support live queries
         if(result.liveQuery) {
-        // console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ server 2")
-          // yield self.liveQueryHandler.connect();
           // if(self.handler.)
           for(var name in self.handler.liveQueryHandlers) {
-            console.log("-------------------------------- name = " + name)
             yield self.handler.liveQueryHandlers[name].connect();
           }
         }
-        // console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ server 3")
 
         resolve();
       }).catch(reject);

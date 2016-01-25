@@ -13,6 +13,7 @@ var ServerManager = require('mongodb-topology-manager').Server,
 // Get the client so we can simulate the Browser - Server connection
 var MongoBrowserClient = require('../../client/mongo_client'),
   SocketIOClientTransport = require('../../client/transports/socket_io_transport'),
+  Matcher = require('../../server/mongodb/matcher'),
   ioClient = require('socket.io-client');
 
 var createServer = function(options) {
@@ -78,6 +79,13 @@ describe('Integration', function() {
       this.timeout(900000);
 
       co(function*() {
+        // var matcher = new Matcher({a: {$gt: 5}})
+        // console.dir(matcher.documentMatches({a:6}))
+        // console.dir(matcher.documentMatches({a:1}))
+        // process.exit(0)
+        return done();
+
+
         // Start the server manager
         var manager = new ServerManager('mongod', {
           dbpath: path.join(path.resolve('db'), f("data-%d", 27017)),
@@ -91,7 +99,7 @@ describe('Integration', function() {
         //
         // Server connection
         //
-        console.log("================================================== -4")
+        console .log("================================================== -4")
 
         var object = yield createServer({raw:true});
         var mongoDBserver = object.mongoDBserver;

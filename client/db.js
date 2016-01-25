@@ -1,6 +1,7 @@
 "use strict"
 
-var Collection = require('./collection');
+var Collection = require('./collection'),
+  inflate = require('./util').inflate;
 
 class Db {
   constructor(name, channel, transport, store) {
@@ -23,10 +24,15 @@ class Db {
 
     // Return the promise
     return new Promise(function(resolve, reject) {
+      // console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ 0")
+      // console.dir(op)
+      // op = ;
+      // console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ 1")
+      // console.dir(op)
       // Final batch op sent to the server
       var cmd = {
         _id: self.store.id(),
-        op: op
+        op: inflate(op)
       };
 
       // Add a listener to the store

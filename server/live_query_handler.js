@@ -1,6 +1,6 @@
 "use strict"
 
-var co = require('co'), 
+var co = require('co'),
   Timestamp = require('mongodb').Timestamp,
   Long = require('mongodb').Long,
   listener = require('mongodb').instrument();
@@ -42,7 +42,7 @@ class Dispatcher {
             break;
           }
         }
-      }  
+      }
     });
 
     // Register the connection to our available live queries
@@ -166,7 +166,7 @@ class LiveQueryHandler {
     // Tracked op log times
     this.lastKnownOpTime = null;
     this.lastKnownOpWriteTime = null;
-    
+
     // State of live query handler
     this.state = 'stopped';
 
@@ -240,7 +240,7 @@ class LiveQueryHandler {
     });
 
     // Connect to the upload
-    var connectToOplog = function(self) {     
+    var connectToOplog = function(self) {
       co(function*() {
         // console.log("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% connectToOplog")
         // console.dir({ts: {$gte: self.lastKnownOpTime.ts }})
@@ -292,7 +292,7 @@ class LiveQueryHandler {
 
             connectToOplog(self);
           }, self.currentBackOffMS);
-        });        
+        });
       })
     }
 

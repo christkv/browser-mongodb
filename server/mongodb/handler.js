@@ -45,18 +45,18 @@ var createValidators = function(validators) {
 
 // Create all the validators
 var validators = createValidators([
-  { command: 'find', json: 'find_command.json' }, 
-  { command: 'getMore', json: 'get_more_command.json' }, 
-  { command: 'aggregate', json: 'aggregate_command.json' }, 
-  { command: 'updateOne', json: 'update_one_command.json' }, 
-  { command: 'updateMany', json: 'update_many_command.json' }, 
-  { command: 'replaceOne', json: 'replace_one_command.json' }, 
-  { command: 'insertOne', json: 'insert_one_command.json' }, 
-  { command: 'insertMany', json: 'insert_many_command.json' }, 
-  { command: 'deleteOne', json: 'delete_one_command.json' }, 
-  { command: 'deleteMany', json: 'delete_many_command.json' }, 
-  { command: 'findOneAndDelete', json: 'find_one_and_delete_command.json' }, 
-  { command: 'findOneAndUpdate', json: 'find_one_and_update_command.json' }, 
+  { command: 'find', json: 'find_command.json' },
+  { command: 'getMore', json: 'get_more_command.json' },
+  { command: 'aggregate', json: 'aggregate_command.json' },
+  { command: 'updateOne', json: 'update_one_command.json' },
+  { command: 'updateMany', json: 'update_many_command.json' },
+  { command: 'replaceOne', json: 'replace_one_command.json' },
+  { command: 'insertOne', json: 'insert_one_command.json' },
+  { command: 'insertMany', json: 'insert_many_command.json' },
+  { command: 'deleteOne', json: 'delete_one_command.json' },
+  { command: 'deleteMany', json: 'delete_many_command.json' },
+  { command: 'findOneAndDelete', json: 'find_one_and_delete_command.json' },
+  { command: 'findOneAndUpdate', json: 'find_one_and_update_command.json' },
   { command: 'findOneAndReplace', json: 'find_one_and_replace_command.json'}
 ]);
 
@@ -187,7 +187,7 @@ class ChannelHandler {
         // Always return as cursor
         if(!command.cursor) command.cursor = {}
 
-        // Set a batchSize 
+        // Set a batchSize
         if(op.batchSize) {
           command.cursor.batchSize = op.batchSize;
         }
@@ -240,9 +240,6 @@ class ChannelHandler {
         var parts = op.find.split('.');
         var db = parts.shift();
         var collection = parts.join('.');
-
-        console.log("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-        console.dir(op)
 
         // Do we have a live query
         var liveQuery = op.liveQuery || false;
@@ -342,7 +339,7 @@ class ChannelHandler {
               options.connection = connections[i];
               break;
             }
-          }          
+          }
         }
 
         // Create command
@@ -388,7 +385,7 @@ class ChannelHandler {
         // Default liveQuery is off
         var liveQuery = false;
         // Did we receive a replicaset ismaster result
-        if(result.isreplicaset 
+        if(result.isreplicaset
           || result.ismaster != null
           || result.secondary != null) {
           liveQuery = true;
@@ -460,7 +457,7 @@ class ChannelHandler {
         // Return the result;
         resolve(finalResult);
       }).catch(reject);
-    });   
+    });
   }
 
   update(single, op, options) {
@@ -501,9 +498,9 @@ class ChannelHandler {
 
         // Function to execute
         if(single) {
-          var result = yield self.client.db(db).collection(collection).updateOne(query, update, commandOptions);
+          var result = yield self.client.db(db).collection(collection).updateOne(EJSON.deserialize(query), EJSON.deserialize(update), commandOptions);
         } else {
-          var result = yield self.client.db(db).collection(collection).updateMany(query, update, commandOptions);
+          var result = yield self.client.db(db).collection(collection).updateMany(EJSON.deserialize(query), EJSON.deserialize(update), commandOptions);
         }
 
         // Final result
@@ -554,14 +551,14 @@ class ChannelHandler {
 
         // Function to execute
         if(single) {
-          var result = yield self.client.db(db).collection(collection).insertOne(op.doc, commandOptions);
+          var result = yield self.client.db(db).collection(collection).insertOne(EJSON.deserialize(op.doc), commandOptions);
         } else {
-          var result = yield self.client.db(db).collection(collection).insertMany(op.docs, commandOptions);
+          var result = yield self.client.db(db).collection(collection).insertMany(EJSON.deserialize(op.docs), commandOptions);
         }
 
         // Final result
         var finalResult = {
-          insertedCount: result.insertedCount,         
+          insertedCount: result.insertedCount,
         };
 
         // Merge in the inserted ids
@@ -607,9 +604,9 @@ class ChannelHandler {
 
         // Function to execute
         if(single) {
-          var result = yield self.client.db(db).collection(collection).deleteOne(op.doc, commandOptions);
+          var result = yield self.client.db(db).collection(collection).deleteOne(EJSON.deserialize(op.doc), commandOptions);
         } else {
-          var result = yield self.client.db(db).collection(collection).deleteMany(op.docs, commandOptions);
+          var result = yield self.client.db(db).collection(collection).deleteMany(EJSON.deserialize(op.doc), commandOptions);
         }
 
         // Return the result;
@@ -643,14 +640,14 @@ class ChannelHandler {
         op.fullResult = true;
 
         // Function to execute
-        var result = yield self.client.db(db).collection(collection).findOneAndDelete(op.q, op);
+        var result = yield self.client.db(db).collection(collection).findOneAndDelete(EJSON.deserialize(op.q), EJSON.deserialize(op));
         // Return the result;
         resolve(result.documents[0].value);
       }).catch(reject);
     });
   }
 
-  findOneAndUpdate(op, options) { 
+  findOneAndUpdate(op, options) {
     var self = this;
     options = options || {};
 
@@ -673,14 +670,14 @@ class ChannelHandler {
         op.fullResult = true;
 
         // Function to execute
-        var result = yield self.client.db(db).collection(collection).findOneAndUpdate(op.q, op.u, op);
+        var result = yield self.client.db(db).collection(collection).findOneAndUpdate(EJSON.deserialize(op.q), EJSON.deserialize(op.u), op);
 
         // Return the result;
         resolve(result.documents[0].value);
       }).catch(reject);
     });
   }
-      
+
   findOneAndReplace(op, options) {
     var self = this;
     options = options || {};
@@ -704,7 +701,7 @@ class ChannelHandler {
         op.fullResult = true;
 
         // Function to execute
-        var result = yield self.client.db(db).collection(collection).findOneAndReplace(op.q, op.u, op);
+        var result = yield self.client.db(db).collection(collection).findOneAndReplace(EJSON.deserialize(op.q), EJSON.deserialize(op.u), op);
 
         // Return the result;
         resolve(result.documents[0].value);

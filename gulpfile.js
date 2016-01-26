@@ -4,7 +4,6 @@ var browserify = require('gulp-browserify'),
     gulp = require('gulp'),
     open = require('gulp-open'),
     plumber = require('gulp-plumber'),
-    // babel = require('gulp-babel'),
     livereload = require('gulp-livereload'),
     webpack = require('gulp-webpack'),
     closureCompiler = require('google-closure-compiler').gulp();
@@ -14,9 +13,17 @@ gulp
   .task('webpack', function(){
     gulp.src('./client/index.js')
       .pipe(plumber())
-      // .pipe(babel({
-      //   presets: ['es2015']
-      // }))
+      .pipe(webpack())
+      .pipe(concat('mongodb-browser.js'))
+      .pipe(plumber.stop())
+      .pipe(gulp.dest('dist'))
+      .pipe(livereload());
+  })
+
+  // performs magic
+  .task('closure', function(){
+    gulp.src('./client/index.js')
+      .pipe(plumber())
       .pipe(webpack())
       .pipe(concat('mongodb-browser.js'))
       .pipe(closureCompiler({
@@ -59,8 +66,6 @@ gulp
 
   // build the application
   .task('default', ['webpack', 'copy'])
-  // .task('default', ['browserify', 'copy', 'connect'])
-  // .task('default2', ['browserify', 'copy'])
 
   // watch for source changes
   .task('watch', ['default'], function(){

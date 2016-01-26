@@ -1,12 +1,4 @@
 /**
- * Module dependencies.
- * @ignore
- */
-if(typeof window === 'undefined') {
-  var Buffer = require('buffer').Buffer; // TODO just use global Buffer
-}
-
-/**
  * A class representation of the BSON Binary type.
  *
  * Sub types
@@ -36,24 +28,20 @@ function Binary(buffer, subType) {
   }
 
   if(buffer != null && !(buffer instanceof Number)) {
-    // Only accept Buffer, Uint8Array or Arrays
+    // Only accept Uint8Array or Arrays
     if(typeof buffer == 'string') {
       // Different ways of writing the length of the string for the different types
-      if(typeof Buffer != 'undefined') {
-        this.buffer = new Buffer(buffer);
-      } else if(typeof Uint8Array != 'undefined' || (Object.prototype.toString.call(buffer) == '[object Array]')) {
+      if(typeof Uint8Array != 'undefined' || (Object.prototype.toString.call(buffer) == '[object Array]')) {
         this.buffer = writeStringToArray(buffer);
       } else {
-        throw new Error("only String, Buffer, Uint8Array or Array accepted");
+        throw new Error("only String, Uint8Array or Array accepted");
       }
     } else {
       this.buffer = buffer;
     }
     this.position = buffer.length;
   } else {
-    if(typeof Buffer != 'undefined') {
-      this.buffer =  new Buffer(Binary.BUFFER_SIZE);
-    } else if(typeof Uint8Array != 'undefined'){
+    if(typeof Uint8Array != 'undefined'){
       this.buffer = new Uint8Array(new ArrayBuffer(Binary.BUFFER_SIZE));
     } else {
       this.buffer = new Array(Binary.BUFFER_SIZE);
@@ -87,32 +75,23 @@ Binary.prototype.put = function put(byte_value) {
   if(this.buffer.length > this.position) {
     this.buffer[this.position++] = decoded_byte;
   } else {
-    if(typeof Buffer != 'undefined' && Buffer.isBuffer(this.buffer)) {
-      // Create additional overflow buffer
-      var buffer = new Buffer(Binary.BUFFER_SIZE + this.buffer.length);
-      // Combine the two buffers together
-      this.buffer.copy(buffer, 0, 0, this.buffer.length);
-      this.buffer = buffer;
-      this.buffer[this.position++] = decoded_byte;
+    var buffer = null;
+    // Create a new buffer (typed or normal array)
+    if(Object.prototype.toString.call(this.buffer) == '[object Uint8Array]') {
+      buffer = new Uint8Array(new ArrayBuffer(Binary.BUFFER_SIZE + this.buffer.length));
     } else {
-      var buffer = null;
-      // Create a new buffer (typed or normal array)
-      if(Object.prototype.toString.call(this.buffer) == '[object Uint8Array]') {
-        buffer = new Uint8Array(new ArrayBuffer(Binary.BUFFER_SIZE + this.buffer.length));
-      } else {
-        buffer = new Array(Binary.BUFFER_SIZE + this.buffer.length);
-      }
-
-      // We need to copy all the content to the new array
-      for(var i = 0; i < this.buffer.length; i++) {
-        buffer[i] = this.buffer[i];
-      }
-
-      // Reassign the buffer
-      this.buffer = buffer;
-      // Write the byte
-      this.buffer[this.position++] = decoded_byte;
+      buffer = new Array(Binary.BUFFER_SIZE + this.buffer.length);
     }
+
+    // We need to copy all the content to the new array
+    for(var i = 0; i < this.buffer.length; i++) {
+      buffer[i] = this.buffer[i];
+    }
+
+    // Reassign the buffer
+    this.buffer = buffer;
+    // Write the byte
+    this.buffer[this.position++] = decoded_byte;
   }
 };
 
@@ -131,10 +110,7 @@ Binary.prototype.write = function write(string, offset) {
   if(this.buffer.length < offset + string.length) {
     var buffer = null;
     // If we are in node.js
-    if(typeof Buffer != 'undefined' && Buffer.isBuffer(this.buffer)) {
-      buffer = new Buffer(this.buffer.length + string.length);
-      this.buffer.copy(buffer, 0, 0, this.buffer.length);
-    } else if(Object.prototype.toString.call(this.buffer) == '[object Uint8Array]') {
+    if(Object.prototype.toString.call(this.buffer) == '[object Uint8Array]') {
       // Create a new buffer
       buffer = new Uint8Array(new ArrayBuffer(this.buffer.length + string.length))
       // Copy the content
@@ -147,15 +123,7 @@ Binary.prototype.write = function write(string, offset) {
     this.buffer = buffer;
   }
 
-  if(typeof Buffer != 'undefined' && Buffer.isBuffer(string) && Buffer.isBuffer(this.buffer)) {
-    string.copy(this.buffer, offset, 0, string.length);
-    this.position = (offset + string.length) > this.position ? (offset + string.length) : this.position;
-    // offset = string.length
-  } else if(typeof Buffer != 'undefined' && typeof string == 'string' && Buffer.isBuffer(this.buffer)) {
-    this.buffer.write(string, offset, 'binary');
-    this.position = (offset + string.length) > this.position ? (offset + string.length) : this.position;
-    // offset = string.length;
-  } else if(Object.prototype.toString.call(string) == '[object Uint8Array]'
+  if(Object.prototype.toString.call(string) == '[object Uint8Array]'
     || Object.prototype.toString.call(string) == '[object Array]' && typeof string != 'string') {
     for(var i = 0; i < string.length; i++) {
       this.buffer[offset++] = string[i];
@@ -207,31 +175,23 @@ Binary.prototype.read = function read(position, length) {
 Binary.prototype.value = function value(asRaw) {
   asRaw = asRaw == null ? false : asRaw;
 
-  // Optimize to serialize for the situation where the data == size of buffer
-  if(asRaw && typeof Buffer != 'undefined' && Buffer.isBuffer(this.buffer) && this.buffer.length == this.position)
-    return this.buffer;
-
   // If it's a node.js buffer object
-  if(typeof Buffer != 'undefined' && Buffer.isBuffer(this.buffer)) {
-    return asRaw ? this.buffer.slice(0, this.position) : this.buffer.toString('binary', 0, this.position);
-  } else {
-    if(asRaw) {
-      // we support the slice command use it
-      if(this.buffer['slice'] != null) {
-        return this.buffer.slice(0, this.position);
-      } else {
-        // Create a new buffer to copy content to
-        var newBuffer = Object.prototype.toString.call(this.buffer) == '[object Uint8Array]' ? new Uint8Array(new ArrayBuffer(this.position)) : new Array(this.position);
-        // Copy content
-        for(var i = 0; i < this.position; i++) {
-          newBuffer[i] = this.buffer[i];
-        }
-        // Return the buffer
-        return newBuffer;
-      }
+  if(asRaw) {
+    // we support the slice command use it
+    if(this.buffer['slice'] != null) {
+      return this.buffer.slice(0, this.position);
     } else {
-      return convertArraytoUtf8BinaryString(this.buffer, 0, this.position);
+      // Create a new buffer to copy content to
+      var newBuffer = Object.prototype.toString.call(this.buffer) == '[object Uint8Array]' ? new Uint8Array(new ArrayBuffer(this.position)) : new Array(this.position);
+      // Copy content
+      for(var i = 0; i < this.position; i++) {
+        newBuffer[i] = this.buffer[i];
+      }
+      // Return the buffer
+      return newBuffer;
     }
+  } else {
+    return convertArraytoUtf8BinaryString(this.buffer, 0, this.position);
   }
 };
 

@@ -1,11 +1,21 @@
 describe('Array', function() {
   describe('#indexOf()', function() {
-    it('should return -1 when the value is not present', function(done) {
-      console.log([1,2,3].indexOf(5).should)
-      console.log("---- hello")
-      done();
-      // [1,2,3].indexOf(5).should.equal(-1);
-      // [1,2,3].indexOf(0).should.equal(-1);
+    it('should simply connect to backend', function(done) {
+      var MongoClient = window.mongodb.MongoClient,
+        SocketIOTransport = window.mongodb.SocketIOTransport;
+        console.log(window.mongodb)
+      // Create an instance
+      var client = new MongoClient(new SocketIOTransport(io, {}));
+
+      // Connect to the db
+      client.connect('http://localhost:8080').then(function(client) {
+        client
+          .db('test')
+          .collection('tests')
+          .insertOne({a:1}, {w:1}).then(function(r) {
+            done();
+          });
+      });
     });
   });
 });

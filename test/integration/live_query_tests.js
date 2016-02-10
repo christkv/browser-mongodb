@@ -37,19 +37,7 @@ var createServer = function(options) {
 
       // Register channel handlers these are used to handle any data before it's passed through
       // to the mongodb handler
-      mongoDBserver.channel('mongodb').before(function(conn, data, callback) {
-        console.log("-------------------------- recevied mongodb channel message pre")
-        console.dir(conn)
-        callback();
-      });
-
-      // Register channel handlers these are used to handle any data before it's returned through
-      // to the mongodb handler
-      mongoDBserver.channel('mongodb').after(function(conn, data, callback) {
-        console.log("-------------------------- recevied mongodb channel message post")
-        console.dir(conn)
-        callback();
-      });
+      mongoDBserver.channel('mongodb');
 
       // Listen to the http server
       httpServer.listen(8080, function() {
@@ -123,6 +111,8 @@ describe('Integration', function() {
         process.nextTick(function() {
           co(function*() {
             var result = yield connectedClient.db('test').collection('tests').insertOne({a:1}, {w:1});
+          }).catch(function(e) {
+            console.log(e.stack)
           });
         })
 
@@ -154,7 +144,6 @@ describe('Integration', function() {
         // Execute the cursor activating the query listening
         var docs = yield cursor.toArray();
       }).catch(function(e) {
-        console.dir(e)
         console.log(e.stack)
       });
     });
@@ -203,15 +192,8 @@ describe('Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:8080');
-
-        process.nextTick(function() {
-          co(function*() {
-            var result = yield connectedClient.db('test').collection('tests').insertOne({a:1}, {w:1});
-          });
-        })
-
         // Iterate over all the cursors
-        var cursor = connectedClient.db('test').collection('tests').find({a:1}).liveQuery();
+        var cursor = connectedClient.db('test').collection('tests1').find({a:1}).liveQuery();
 
         cursor.on('added', function(id, fields) {
           co(function*() {
@@ -228,10 +210,10 @@ describe('Integration', function() {
           });
         });
 
-        // Wit for a little bit before forcing an oplog update
+        // Wait for a little bit before forcing an oplog update
         setTimeout(function() {
           co(function*() {
-            yield connectedClient.db('test').collection('tests').insertOne({a:1});
+            yield connectedClient.db('test').collection('tests1').insertOne({a:1});
           }).catch(function(e) {
             console.log(e.stack)
           });
@@ -292,12 +274,12 @@ describe('Integration', function() {
 
         process.nextTick(function() {
           co(function*() {
-            var result = yield connectedClient.db('test').collection('tests').insertOne({a:1}, {w:1});
+            var result = yield connectedClient.db('test').collection('tests2').insertOne({a:1}, {w:1});
           });
         })
 
         // Iterate over all the cursors
-        var cursor = connectedClient.db('test').collection('tests').find({a:1}).liveQuery();
+        var cursor = connectedClient.db('test').collection('tests2').find({a:1}).liveQuery();
 
         cursor.on('removed', function(id) {
           co(function*() {
@@ -315,7 +297,7 @@ describe('Integration', function() {
         // Wit for a little bit before forcing an oplog update
         setTimeout(function() {
           co(function*() {
-            yield connectedClient.db('test').collection('tests').deleteOne({a:1});
+            yield connectedClient.db('test').collection('tests2').deleteOne({a:1});
           }).catch(function(e) {
             console.log(e.stack)
           });
@@ -324,7 +306,6 @@ describe('Integration', function() {
         // Execute the cursor activating the query listening
         var docs = yield cursor.toArray();
       }).catch(function(e) {
-        console.dir(e)
         console.log(e.stack)
       });
     });

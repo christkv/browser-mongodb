@@ -25,7 +25,7 @@ var createServer = function() {
         var data = '';
 
         if(req.url == '/mongodb-browser-closure.js') {
-          file = f('%s/../../dist/mongodb-browser.js', __dirname);
+          file = f('%s/../../dist/mongodb-browser-closure.js', __dirname);
           data = fs.readFileSync(file);
         } else if(req.url == '/') {
           file = f('%s/index.htm', __dirname);
@@ -35,7 +35,12 @@ var createServer = function() {
         } else {
           file = req.url.replace(/\//g, '');
           file = f('%s/%s', __dirname, file);
-          data = fs.readFileSync(file);
+
+          try {
+            data = fs.readFileSync(file);
+          } catch(err) {
+            data = 'File not found';
+          }
         }
 
         res.end(data);

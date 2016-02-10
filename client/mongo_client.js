@@ -46,6 +46,8 @@ class MongoClient {
 
         // Listen to all mongodb socket information
         self.transport.onChannel(self.channel, function(data) {
+          // console.log("\n\n\n!!!!!!!!!!!!!!!!!!!!!!!!! Client received data")
+          // console.dir(data)
           // if(data.type) {
           //   console.log("\n\n\n!!!!!!!!!!!!!!!!!!!!!!!!! Client received data")
           //   console.dir(data)

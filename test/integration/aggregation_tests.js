@@ -36,19 +36,7 @@ var createServer = function(options) {
 
       // Register channel handlers these are used to handle any data before it's passed through
       // to the mongodb handler
-      mongoDBserver.channel('mongodb').before(function(conn, data, callback) {
-        console.log("-------------------------- recevied mongodb channel message pre")
-        console.dir(conn)
-        callback();
-      });
-
-      // Register channel handlers these are used to handle any data before it's returned through
-      // to the mongodb handler
-      mongoDBserver.channel('mongodb').after(function(conn, data, callback) {
-        console.log("-------------------------- recevied mongodb channel message post")
-        console.dir(conn)
-        callback();
-      });
+      mongoDBserver.channel('mongodb');
 
       // Listen to the http server
       httpServer.listen(8080, function() {

@@ -215,6 +215,10 @@ class LiveQueryHandler {
     this.dispatcher.register(connection, ns, liveQueryId, op);
   }
 
+  destroy() {
+    self.cursor.destroy();
+  }
+
   connect() {
     var self = this;
 

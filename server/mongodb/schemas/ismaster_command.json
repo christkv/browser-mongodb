@@ -1,0 +1,6 @@
+{
+  "properties": {
+    "ismaster": { "type": "boolean" }
+  },
+  "required": ["ismaster"]
+}

@@ -1,11 +1,8 @@
 "use strict"
 
 var co = require('co')
-  , EJSON = require('mongodb-extended-json');
-
-// Used to identify errors in Raw messages
-var okFalse = new Buffer([1, 111, 107, 0, 0, 0, 0]);
-var okTrue = new Buffer([1, 111, 107, 0, 0, 0, 1]);
+  , EJSON = require('mongodb-extended-json')
+  , okFalse = require('../util').okFalse;
 
 class Command {
   constructor() {

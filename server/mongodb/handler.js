@@ -2,31 +2,10 @@
 
 var co = require('co'),
   f = require('util').format,
-  fs = require('fs'),
-  ReadPreference = require('mongodb').ReadPreference,
-  Long = require('mongodb').Long,
-  ObjectId = require('mongodb').ObjectId,
-  Binary = require('mongodb').Binary,
-  Timestamp = require('mongodb').Timestamp,
   BSON = require('bson').pure(),
   EJSON = require('mongodb-extended-json'),
+  ERRORS = require('./errors'),
   Compiler = new require('vitesse-jsonspec');
-
-// Error commands
-var ERRORS = {};
-ERRORS.NO_SUCH_COMMAND = 0;
-ERRORS.FIND_COMMAND_FAILURE = 1;
-ERRORS.GENERAL_COMMAND_FAILURE = 2;
-ERRORS.GETMORE_COMMAND_FAILURE = 3;
-ERRORS.CURSOR_NOT_FOUND = 4;
-ERRORS.REPLACE_CONTAINS_OPERATORS = 5;
-ERRORS.LIVE_QUERY_ID_ILLEGAL = 6;
-ERRORS.NO_LIVE_QUERY_CHANNEL_HANDLER = 7;
-ERRORS.PRE_CONDITION_FAILED = 8;
-
-// Used to identify errors in Raw messages
-var okFalse = new Buffer([1, 111, 107, 0, 0, 0, 0]);
-var okTrue = new Buffer([1, 111, 107, 0, 0, 0, 1]);
 
 // JSONSchema compiler
 var compiler = new Compiler();
@@ -138,24 +117,6 @@ class ChannelHandler {
       });
     });
   }
-}
-
-var mergeOptions = function(op) {
-  var object = {};
-  var options = {'w':true, 'wtimeout':true, 'j':true, 'ordered':true, 'readPreference':true};
-
-  for(var name in op) {
-    // Rewrite the readPreference to use the right type
-    if(op.readPreference) {
-      var mode = op.readPreference.mode || 'primary';
-      var tags = op.readPreference.tags;
-      object[name] = new ReadPreference(mode, tags);
-    } else if(options[name]) {
-      object[name] = op[name];
-    }
-  }
-
-  return object;
 }
 
 module.exports = ChannelHandler;

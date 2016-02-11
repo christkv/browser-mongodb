@@ -35,6 +35,9 @@ class Db {
         op: serialize(op)
       };
 
+      // console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ command execute")
+      // console.dir(cmd)
+
       // Add a listener to the store
       self.store.add(cmd._id, function(err, result) {
         if(err) return reject(err);

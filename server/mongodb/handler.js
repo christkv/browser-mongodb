@@ -111,10 +111,24 @@ class ChannelHandler {
         });
       }
     }).catch(function(err) {
-      connection.write(channel, {
+      // Error message
+      var error = {
         ok:false, _id: doc._id, code: typeof err.code == 'number' ? err.code : ERRORS.GENERAL_COMMAND_FAILURE,
         message: err.message || 'command failure', op: doc ? doc.op : {}
-      });
+      }
+
+      // We have a series of errors
+      if(Array.isArray(err)) {
+        // Add all the pre-errors
+        error.errors = err.map(function(x) {
+          var err = {message: x.message};
+          if(x.code) err.code = x.code;
+          return err;
+        });
+      }
+
+      // Write out the error command
+      connection.write(channel, error);
     });
   }
 }

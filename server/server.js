@@ -66,6 +66,11 @@ class Server {
     this.handler.register('findOneAndReplace', readAndParseJSON(f('%s/%s', __dirname, 'mongodb/schemas/find_one_and_replace_command.json')), new FindOneAndReplace());
   }
 
+  registerCommand(name, spec, command) {
+    this.handler.register(name, spec, command);
+    return this;
+  }
+
   registerHandler(handler) {
     var self = this;
     // Push the handler to the list of available handlers

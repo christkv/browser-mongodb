@@ -10,7 +10,7 @@ class Command {
 
   handle(connection, mongoClient, bson, originalOp, op, liveQueryHandler, options) {
     options = options || {};
-    if(!options.promoteLong) options.promoteLong = false;
+    if(!options.promoteLongs) options.promoteLongs = false;
 
     return new Promise(function(resolve, reject) {
       co(function*() {

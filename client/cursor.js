@@ -2,6 +2,7 @@
 
 var Promise = require('./util').Promise,
   EventEmitter = require('./event_emitter'),
+  Long = require('./bson/long'),
   co = require('co');
 
 // Contains the global liveQuery id used to associate queries
@@ -195,7 +196,8 @@ class Cursor extends EventEmitter {
 
           // Add the documents to the end
           self.documents = self.documents.concat(r.cursor.firstBatch);
-          self.cursorId = r.cursor.id;
+          self.cursorId = typeof r.cursor.id == 'number' ? Long.fromNumber(r.cursor.id) : r.cursor.id;
+
 
           // Are we listening
           if(self.options.liveQuery && self.options.liveQueryId != null) {
@@ -250,7 +252,7 @@ class Cursor extends EventEmitter {
 
           // Add the documents to the end
           self.documents = self.documents.concat(r.cursor.nextBatch);
-          self.cursorId = r.cursor.id;
+          self.cursorId = typeof r.cursor.id == 'number' ? Long.fromNumber(r.cursor.id) : r.cursor.id;
           // Return the first document
           var doc = self.documents.shift();
           // We have no results
@@ -302,7 +304,7 @@ class Cursor extends EventEmitter {
 
         // Get the documents, server format or API format
         docs = docs.concat(r.cursor.firstBatch);
-        var cursorId = r.cursor.id;
+        var cursorId = typeof r.cursor.id == 'number' ? Long.fromNumber(r.cursor.id) : r.cursor.id;
         // No more documents
         if(cursorId.isZero()) return resolve(docs);
 
@@ -326,7 +328,7 @@ class Cursor extends EventEmitter {
 
           // Get the documents, server format or API format
           docs = docs.concat(r1.cursor.nextBatch);
-          var cursorId = r1.cursor.id;
+          var cursorId = typeof r1.cursor.id == 'number' ? Long.fromNumber(r1.cursor.id) : r1.cursor.id;
 
           // Get the documents
           if(cursorId.isZero()) break;

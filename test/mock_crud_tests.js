@@ -7,6 +7,26 @@ var EventEmitter = require('events').EventEmitter,
 class MockTransport extends EventEmitter {
   constructor() {
     super();
+    this.handlers = {};
+  }
+
+  connect() {
+    var self = this;
+    return new Promise(function(r, e) {
+      r(self);
+      self.emit('connect')
+    });
+  }
+
+  write(ch, op) {
+    this.handlers['mongodb']({ ok:true, _id: op._id, result:  {
+      ok: true, insert:true, update:true, delete:true,
+      findAndModify:true, commands: ['ismaster'], liveQuery: true }
+    });
+  }
+
+  onChannel(channel, handler) {
+    this.handlers[channel] = handler;
   }
 
   trigger(event) {
@@ -24,9 +44,7 @@ describe('Browser', function() {
       // The mock transport object
       var mock = new MockTransport();
       // Create an instance
-      var client = new MongoClient(function() {
-        return mock;
-      });
+      var client = new MongoClient(mock);
 
       // Attempt to connect
       client.connect('mongodb://localhost:27017/app').then(function(client) {
@@ -34,7 +52,9 @@ describe('Browser', function() {
       });
 
       // Trigger the connect event
-      mock.trigger('connect');
+      setTimeout(() => {
+        mock.trigger('connect');
+      }, 100)
     });
 
     it('fail connection', function(done) {
@@ -43,9 +63,7 @@ describe('Browser', function() {
       // The mock transport object
       var mock = new MockTransport();
       // Create an instance
-      var client = new MongoClient(function() {
-        return mock;
-      });
+      var client = new MongoClient(mock);
 
       // Attempt to connect
       client.connect('mongodb://localhost:27017/app').then(function(client) {
@@ -55,7 +73,9 @@ describe('Browser', function() {
       });
 
       // Trigger the connect event
-      mock.trigger('error', new Error('failed to connect'));
+      setTimeout(() => {
+        mock.trigger('error', new Error('failed to connect'));
+      });
     });
   });
 

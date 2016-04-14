@@ -2,8 +2,8 @@ var co = require('co'),
   path = require('path'),
   assert = require('assert'),
   f = require('util').format,
-  SocketIOTransport = require('../../server/socket_io_transport'),
-  Server = require('../../server/server'),
+  SocketIOTransport = require('../../../server/socket_io_transport'),
+  Server = require('../../../server/server'),
   MongoClient = require('mongodb').MongoClient;
 
 // MongoDB Topology Manager
@@ -11,8 +11,8 @@ var ServerManager = require('mongodb-topology-manager').Server,
   ReplSetManager = require('mongodb-topology-manager').ReplSet;
 
 // Get the client so we can simulate the Browser - Server connection
-var MongoBrowserClient = require('../../client/mongo_client'),
-  SocketIOClientTransport = require('../../client/transports/socket_io_transport'),
+var MongoBrowserClient = require('../../../client/mongo_client'),
+  SocketIOClientTransport = require('../../../client/transports/socket_io_transport'),
   ioClient = require('socket.io-client');
 
 var createServer = function(options) {

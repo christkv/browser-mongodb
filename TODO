@@ -1,0 +1,6 @@
+- Add tests for cursor with flags
+- Add update/remove CRUD tests
+- Add findAndModify CRUD tests
+- Add change listener
+- Add pre-handler support and tests
+- Add post-handler support and tests

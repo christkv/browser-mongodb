@@ -50,6 +50,10 @@ class Connection extends EventEmitter {
     }
   }
 
+  session() {
+    return this.connection.handshake.session;
+  }
+
   write(channel, doc) {
     this.connection.emit(channel, doc);
   }

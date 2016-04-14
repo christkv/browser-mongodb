@@ -41,18 +41,12 @@ class MongoClient {
     // Return the promise to allow for the connection
     return new Promise(function(resolve, reject) {
       co(function*() {
+        console.log("!!!!!!!!!! connect 0")
         // Save the socket
         self.transport = yield self.transportFactory.connect(url, options);
-
+        console.log("!!!!!!!!!! connect 1")
         // Listen to all mongodb socket information
         self.transport.onChannel(self.channel, function(data) {
-          // console.log("\n\n\n!!!!!!!!!!!!!!!!!!!!!!!!! Client received data")
-          // console.dir(data)
-          // if(data.type) {
-          //   console.log("\n\n\n!!!!!!!!!!!!!!!!!!!!!!!!! Client received data")
-          //   console.dir(data)
-          // }
-
           if(data.ok != null && !data.ok) {
             self.store.call(data._id, new MongoError(data), undefined);
           } else if(data.ok != null && data.ok && typeof data.type == 'string') {
@@ -68,11 +62,15 @@ class MongoClient {
             self.store.call(data._id, null, data);
           }
         });
+        console.log("!!!!!!!!!! connect 2")
 
         self.transport.on('connect', function() {
+          console.log("!!!!!!!!!! connect")
           co(function*() {
+            console.log("!!!!!!!!!! connect -1")
             // Execute ismaster against server to determine abilites available
             self.abilities = yield self.db('admin').command({ismaster:true});
+            console.log("!!!!!!!!!! connect -2")
             // Resolve
             resolve(self);
           }).catch(function(err) {

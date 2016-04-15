@@ -8,6 +8,7 @@ var co = require('co'),
   bodyParser = require('body-parser'),
   ExpressRESTTransport = require('../../../server/express_rest_transport'),
   Server = require('../../../server/server'),
+  Long = require('mongodb').Long,
   MongoClient = require('mongodb').MongoClient;
 
 // MongoDB Topology Manager
@@ -1683,6 +1684,8 @@ describe('REST Integration', function() {
 
           assert.true(false);
         } catch(err) {
+          // console.log("-------------------------")
+          // console.dir(err)
           code = err.code;
         }
 

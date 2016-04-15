@@ -24,19 +24,11 @@ class Db {
 
     // Return the promise
     return new Promise(function(resolve, reject) {
-      // console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ 0")
-      // console.dir(op)
-      // op = ;
-      // console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ 1")
-      // console.dir(op)
       // Final batch op sent to the server
       var cmd = {
         _id: self.store.id(),
         op: serialize(op)
       };
-
-      // console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ command execute")
-      // console.dir(cmd)
 
       // Add a listener to the store
       self.store.add(cmd._id, function(err, result) {

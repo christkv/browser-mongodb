@@ -67,6 +67,11 @@ class Server {
   }
 
   registerCommand(name, spec, command) {
+    if(typeof name != 'string') throw new Error('name parameter must be a string');
+    if(spec == null && typeof spec != 'object') throw new Error('spec parameter must be a JSON-Schema object');
+    if(command == null && typeof command != 'object') throw new Error('command parameter must be a valid command object');
+
+    // Add the command
     this.handler.register(name, spec, command);
     return this;
   }

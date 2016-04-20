@@ -3,6 +3,11 @@
 var Promise = require('../util').Promise,
   EventEmitter = require('../event_emitter');
 
+const CONNECTING = 0;
+const OPEN = 1;
+const CLOSING = 2;
+const CLOSED = 3;
+
 class Connection extends EventEmitter {
   constructor(socket) {
     super();
@@ -32,6 +37,10 @@ class SocketIOTransport {
     this.ioClientConnect = ioClientConnect;
     this.options = options || {};
     this.socket = null;
+  }
+
+  isConnected() {
+    return this.socket && this.socket.readState == OPEN;
   }
 
   connect(url, options) {

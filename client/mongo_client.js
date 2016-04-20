@@ -31,6 +31,10 @@ class MongoClient {
     this.store = new Callbacks();
   }
 
+  isConnected() {
+    return this.transportFactory && this.transportFactory.isConnected();
+  }
+
   connect(url, channel, options) {
     var self = this;
     // Set the options

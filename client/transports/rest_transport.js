@@ -92,6 +92,10 @@ class RESTTransport {
     });
   }
 
+  isConnected() {
+    return true;
+  }
+
   on() {
   }
 

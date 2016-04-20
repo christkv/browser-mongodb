@@ -47,16 +47,63 @@ var readIEEE754 = function(buffer, offset, endian, mLen, nBytes) {
 
 module.exports.deserializeFast = deserializeFast;
 
+// http://www.onicos.com/staff/iz/amuse/javascript/expert/utf.txt
+
+/* utf.js - UTF-8 <=> UTF-16 convertion
+ *
+ * Copyright (C) 1999 Masanao Izumo <iz@onicos.co.jp>
+ * Version: 1.0
+ * LastModified: Dec 25 1999
+ * This library is free.  You can redistribute it and/or modify it.
+ */
+
+function Utf8ArrayToStr(array) {
+    var out, i, len, c;
+    var char2, char3;
+
+    out = "";
+    len = array.length;
+    i = 0;
+    while(i < len) {
+    c = array[i++];
+    switch(c >> 4)
+    {
+      case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
+        // 0xxxxxxx
+        out += String.fromCharCode(c);
+        break;
+      case 12: case 13:
+        // 110x xxxx   10xx xxxx
+        char2 = array[i++];
+        out += String.fromCharCode(((c & 0x1F) << 6) | (char2 & 0x3F));
+        break;
+      case 14:
+        // 1110 xxxx  10xx xxxx  10xx xxxx
+        char2 = array[i++];
+        char3 = array[i++];
+        out += String.fromCharCode(((c & 0x0F) << 12) |
+                       ((char2 & 0x3F) << 6) |
+                       ((char3 & 0x3F) << 0));
+        break;
+    }
+    }
+
+    return out;
+}
+
 function deserializeFast(buffer, i, isArray){   //// , options, isArray) {       //// no more options!
     if (buffer.length < 5) return new Error('Corrupt bson message < 5 bytes long'); /// from 'throw'
     var elementType, tempindex = 0, name;
     var string, low, high;              /// = lowBits / highBits
                                         /// using 'i' as the index to keep the lines shorter:
     i || ( i = 0 );  /// for parseResponse it's 0; set to running index in deserialize(object/array) recursion
+
     var object = isArray ? [] : {};         /// needed for type ARRAY recursion later!
+
     var size = buffer[i++] | buffer[i++] << 8 | buffer[i++] << 16 | buffer[i++] << 24;
+
     if(size < 5 || size > buffer.length) return new Error('Corrupt BSON message');
-/// 'size' var was not used by anything after this, so we can reuse it
+    /// 'size' var was not used by anything after this, so we can reuse it
 
     while(true) {                           // While we have more left data left keep parsing
       elementType = buffer[i++];          // Read the type
@@ -65,7 +112,8 @@ function deserializeFast(buffer, i, isArray){   //// , options, isArray) {      
       tempindex = i;  /// inlined readCStyleString & removed extra i<buffer.length check slowing EACH loop!
       while( buffer[tempindex] !== 0x00 ) tempindex++;  /// read ahead w/out changing main 'i' index
       if (tempindex >= buffer.length) return new Error('Corrupt BSON document: illegal CString')
-      name = buffer.toString('utf8', i, tempindex);
+      name = Utf8ArrayToStr(buffer.slice(i, tempindex));
+
       i = tempindex + 1;               /// Update index position to after the string + '0' termination
 
       switch(elementType) {
@@ -82,7 +130,7 @@ function deserializeFast(buffer, i, isArray){   //// , options, isArray) {      
 
         case 2:     /// = BSON.BSON_DATA_STRING:
           size = buffer[i++] | buffer[i++] <<8 | buffer[i++] <<16 | buffer[i++] <<24;
-          object[name] = buffer.toString('utf8', i, i += size -1 );
+          object[name] = Utf8ArrayToStr(buffer.slice(i, i += size -1 ));
           i++;
           break;          /// need to get the '0' index "tick-forward" back!
 
@@ -118,7 +166,7 @@ function deserializeFast(buffer, i, isArray){   //// , options, isArray) {      
         case 5:     /// = BSON.BSON_DATA_BINARY:             // Decode the size of the binary blob
           size = buffer[i++] | buffer[i++] << 8 | buffer[i++] << 16 | buffer[i++] << 24;
           buffer[i++];             /// Skip, as we assume always default subtype, i.e. 0!
-          object[name] = buffer.slice(i, i += size); 
+          object[name] = buffer.slice(i, i += size);
           break;
 
         case 9:     /// = BSON.BSON_DATA_DATE:      /// SEE notes below on the Date type vs. other options...

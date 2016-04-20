@@ -86,7 +86,7 @@ Item.prototype.run = function () {
   this.fun.apply(null, this.array);
 };
 
-// Deflate
+// Extended JSON
 var serialize = function(doc) {
   var obj = {};
 
@@ -149,11 +149,15 @@ var serialize = function(doc) {
         $symbol: doc[name].value
       }
     } else if(Array.isArray(doc[name])) {
-      obj[name] = [];
-
+      // obj[name] = serialize(doc[name]);
+      var values = serialize(doc[name]);
+      // Create empty array
+      obj[name] = new Array(doc[name].length);
+      // Map the values back into the array
       for(var i = 0; i < doc[name].length; i++) {
-        obj[name][i] = serialize(doc[name][i]);
+        obj[name][i] = values[i];
       }
+
     } else if(doc[name] != null && typeof doc[name] == 'object') {
       obj[name] = serialize(doc[name]);
     } else {

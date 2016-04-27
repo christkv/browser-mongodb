@@ -29,7 +29,7 @@ class Command {
         commandOptions.fullResult = true;
 
         // Function to execute
-        var result = yield mongoClient.db(db).collection(collection).deleteMany(EJSON.deserialize(op.doc), commandOptions);
+        var result = yield mongoClient.db(db).collection(collection).deleteMany(EJSON.deserialize(op.q), commandOptions);
 
         // Return the result;
         resolve({

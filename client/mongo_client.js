@@ -16,6 +16,8 @@ var deserialize = function(obj) {
         obj[name] = Long.fromString(obj[name]['$numberLong']);
       } else if(obj[name] != null && obj[name]['$oid']) {
         obj[name] = new ObjectId(obj[name]['$oid']);
+      } else if(obj[name] != null && obj[name]['$date']) {
+        obj[name] = new Date(obj[name]['$date']);
       } else if(obj[name] != null && typeof obj[name] === 'object') {
         obj[name] = deserialize(obj[name]);
       }

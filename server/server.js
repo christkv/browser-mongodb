@@ -98,25 +98,6 @@ class Server {
     return this;
   }
 
-  connect() {
-    var self = this;
-
-    return new Promise(function(resolve, reject) {
-      co(function*() {
-        var result = yield self.handler.ismaster();
-        // We support live queries
-        if(result.liveQuery) {
-          // if(self.handler.)
-          for(var name in self.handler.liveQueryHandlers) {
-            yield self.handler.liveQueryHandlers[name].connect();
-          }
-        }
-
-        resolve();
-      }).catch(reject);
-    });
-  }
-
   destroy() {
     for(var name in this.handler.liveQueryHandlers) {
       this.handler.liveQueryHandlers[name].destroy();
@@ -126,29 +107,44 @@ class Server {
   channel(channel, options) {
     var self = this;
     options = options || {};
-    // Record the channel handlers
-    this.channels[channel] = new Channel(channel);
 
-    // Register live query handler
-    self.handler.registerLiveQueryChannel(channel, new LiveQueryHandler(channel, self.client, options));
+    return new Promise(function(resolve, reject) {
+      co(function*() {
+        // Record the channel handlers
+        self.channels[channel] = new Channel(channel);
 
-    // Add the actual handler for the channel
-    this.channels[channel].handler = function(connection, channel, obj) {
-      self.handler.handle(connection, channel, obj);
-    }
+        // Create a new live query handler
+        var liveQueryHandler = new LiveQueryHandler(channel, self.client, options);
 
-    // Add the error handler for the channel
-    this.channels[channel].errorHandler = function(connection, channel, obj, errors) {
-      self.handler.error(connection, channel, obj, errors);
-    }
+        // Register live query handler
+        self.handler.registerLiveQueryChannel(channel, liveQueryHandler);
 
-    // Register the channel handlers
-    for(var i = 0; i < this.handlers.length; i++) {
-      this.handlers[i].channel(this.channels[channel]);
-    }
+        // Add the actual handler for the channel
+        self.channels[channel].handler = function(connection, channel, obj) {
+          self.handler.handle(connection, channel, obj);
+        }
 
-    // Return the object
-    return this.channels[channel];
+        // Add the error handler for the channel
+        self.channels[channel].errorHandler = function(connection, channel, obj, errors) {
+          self.handler.error(connection, channel, obj, errors);
+        }
+
+        // Register the channel handlers
+        for(var i = 0; i < self.handlers.length; i++) {
+          self.handlers[i].channel(self.channels[channel]);
+        }
+
+        // Get the ismaster
+        var result = yield self.handler.ismaster();
+        // We support live queries
+        if(result.liveQuery) {
+          yield liveQueryHandler.connect();
+        }
+
+        // Return the object
+        resolve(self.channels[channel]);
+      }).catch(reject);
+    });
   }
 }
 

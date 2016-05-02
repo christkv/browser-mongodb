@@ -70,8 +70,10 @@ class Dispatcher {
         // Turn document into EJSON for the matching
         doc = EJSON.serialize(doc);
 
+        // Get match result
+        var result = filter.documentMatches(doc).result;
         // We have a match, let's fire off the change message
-        if(filter.documentMatches(doc)) {
+        if(result) {
           query.connection.write(self.channel, {
             ok: true,
             type: 'added',

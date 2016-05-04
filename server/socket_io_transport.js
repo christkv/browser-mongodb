@@ -15,16 +15,19 @@ class Connection extends EventEmitter {
 
     // Execute pre handlers
     var executeHandlers = function(index, handlers, connection, channel, data, callback) {
+      // No handlers, return
+      if(handlers.length == 0) return callback();
       // Return if there are no pre handlers
       if(index == handlers.length) return callback();
-
-      // Execute the next handler
-      var handler = handlers.shift();
-
+      // Get the next handler
+      var handler = handlers[index];
       // Execute it
       handler(connection, channel, data, function(err) {
         if(err) return callback(err);
-        executeHandlers(index++, handlers, connection, channel, data, callback);
+        // Update index into handlers
+        index = index + 1;
+        // Call execute handlers again
+        executeHandlers(index, handlers, connection, channel, data, callback);
       });
     }
 

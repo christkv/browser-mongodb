@@ -76,7 +76,7 @@ class Server {
     return this;
   }
 
-  registerHandler(handler) {
+  registerTransport(handler) {
     var self = this;
     // Push the handler to the list of available handlers
     this.handlers.push(handler);
@@ -104,7 +104,7 @@ class Server {
     }
   }
 
-  channel(channel, options) {
+  createChannel(channel, options) {
     var self = this;
     options = options || {};
 

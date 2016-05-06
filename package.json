@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "watch": "gulp watch",
-    "test": "mocha test/integration/**/*"
+    "test": "mocha test/integration/*"
   },
   "repository": {
     "type": "git",
@@ -45,6 +45,7 @@
     "gulp-webpack": "^1.5.0",
     "mocha": "^2.4.5",
     "mongodb-topology-manager": "^1.0.5",
+    "mongodb-version-manager": "^1.0.4",
     "socket.io-client": "^1.4.4",
     "xmlhttprequest": "^1.8.0"
   }

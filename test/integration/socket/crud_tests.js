@@ -87,7 +87,7 @@ describe('Integration', function() {
         // Shut down MongoDB connection
         dbClient.close();
         // Shut down MongoDB instance
-        yield manager.stop();
+        yield manager.stop(9);
 
         done();
       }).catch(function(e) {
@@ -139,7 +139,7 @@ describe('Integration', function() {
         // Shut down MongoDB connection
         dbClient.close();
         // Shut down MongoDB instance
-        yield manager.stop();
+        yield manager.stop(9);
 
         done();
       }).catch(function(e) {
@@ -189,7 +189,7 @@ describe('Integration', function() {
         // Shut down MongoDB connection
         dbClient.close();
         // Shut down MongoDB instance
-        yield manager.stop();
+        yield manager.stop(9);
 
         done();
       }).catch(function(e) {
@@ -250,7 +250,7 @@ describe('Integration', function() {
         // Shut down MongoDB connection
         dbClient.close();
         // Shut down MongoDB instance
-        yield manager.stop();
+        yield manager.stop(9);
 
         done();
       }).catch(function(e) {
@@ -316,7 +316,7 @@ describe('Integration', function() {
         // Shut down MongoDB connection
         dbClient.close();
         // Shut down MongoDB instance
-        yield manager.stop();
+        yield manager.stop(9);
 
         done();
       }).catch(function(e) {
@@ -382,7 +382,7 @@ describe('Integration', function() {
         // Shut down MongoDB connection
         dbClient.close();
         // Shut down MongoDB instance
-        yield manager.stop();
+        yield manager.stop(9);
 
         done();
       }).catch(function(e) {
@@ -438,7 +438,7 @@ describe('Integration', function() {
         // Shut down MongoDB connection
         dbClient.close();
         // Shut down MongoDB instance
-        yield manager.stop();
+        yield manager.stop(9);
 
         done();
       }).catch(function(e) {
@@ -492,7 +492,7 @@ describe('Integration', function() {
         // Shut down MongoDB connection
         dbClient.close();
         // Shut down MongoDB instance
-        yield manager.stop();
+        yield manager.stop(9);
 
         done();
       }).catch(function(e) {
@@ -546,7 +546,7 @@ describe('Integration', function() {
         // Shut down MongoDB connection
         dbClient.close();
         // Shut down MongoDB instance
-        yield manager.stop();
+        yield manager.stop(9);
 
         done();
       }).catch(function(e) {
@@ -601,7 +601,7 @@ describe('Integration', function() {
         // Shut down MongoDB connection
         dbClient.close();
         // Shut down MongoDB instance
-        yield manager.stop();
+        yield manager.stop(9);
 
         done();
       }).catch(function(e) {
@@ -656,7 +656,7 @@ describe('Integration', function() {
         // Shut down MongoDB connection
         dbClient.close();
         // Shut down MongoDB instance
-        yield manager.stop();
+        yield manager.stop(9);
 
         done();
       }).catch(function(e) {

@@ -41,14 +41,12 @@ var createServer = function() {
       // Add to the server
       var mongoDBserver = new Server(client, {});
       // Attach to the express
-      mongoDBserver.registerHandler(new ExpressRESTTransport('/mongodb', app));
-
+      mongoDBserver.registerTransport(new ExpressRESTTransport('/mongodb', app));
       // Register channel handlers these are used to handle any data before it's passed through
       // to the mongodb handler
-      mongoDBserver.channel('mongodb');
-
+      yield mongoDBserver.createChannel('mongodb');
       // Listen to the http server
-      var server = app.listen(8080, function() {
+      var server = app.listen(9091, function() {
         resolve({
           httpServer: server,
           client: client,
@@ -92,8 +90,10 @@ describe('REST Integration', function() {
         var client = new MongoBrowserClient(new RESTClientTransport('/mongodb', {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080/mongodb');
+        var connectedClient = yield client.connect('http://localhost:9091/mongodb');
 
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection
@@ -138,13 +138,15 @@ describe('REST Integration', function() {
         var client = new MongoBrowserClient(new RESTClientTransport('/mongodb', {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080/mongodb');
+        var connectedClient = yield client.connect('http://localhost:9091/mongodb');
 
         // Perform an insert
         var result = yield connectedClient.db('test').collection('tests').insertOne({a:1}, {w:1});
         assert.equal(1, result.insertedCount);
         assert.equal(1, result.insertedIds.length);
 
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection
@@ -187,11 +189,14 @@ describe('REST Integration', function() {
         var client = new MongoBrowserClient(new RESTClientTransport('/mongodb', {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080/mongodb');
+        var connectedClient = yield client.connect('http://localhost:9091/mongodb');
         // Perform an insert
         var result = yield connectedClient.db('test').collection('tests').insertMany([{a:1}, {a:2}], {w:1});
         assert.equal(2, result.insertedCount);
         assert.equal(2, Object.keys(result.insertedIds).length);
+
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection
@@ -236,7 +241,7 @@ describe('REST Integration', function() {
         var client = new MongoBrowserClient(new RESTClientTransport('/mongodb', {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080/mongodb');
+        var connectedClient = yield client.connect('http://localhost:9091/mongodb');
 
         // Perform an upsert
         var result = yield connectedClient.db('test').collection('tests').updateOne({a:1}, {a:1}, {upsert:true, w:1});
@@ -251,6 +256,8 @@ describe('REST Integration', function() {
         assert.equal(0, result.upsertedCount);
         assert.equal(1, result.modifiedCount);
 
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection
@@ -293,7 +300,7 @@ describe('REST Integration', function() {
         var client = new MongoBrowserClient(new RESTClientTransport('/mongodb', {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080/mongodb');
+        var connectedClient = yield client.connect('http://localhost:9091/mongodb');
 
         // Perform an upsert
         var result = yield connectedClient.db('test').collection('tests').updateOne({a:1, b:1}, {a:1, b:1}, {upsert:true, w:1});
@@ -315,6 +322,8 @@ describe('REST Integration', function() {
         assert.equal(0, result.upsertedCount);
         assert.equal(2, result.modifiedCount);
 
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection
@@ -357,7 +366,7 @@ describe('REST Integration', function() {
         var client = new MongoBrowserClient(new RESTClientTransport('/mongodb', {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080/mongodb');
+        var connectedClient = yield client.connect('http://localhost:9091/mongodb');
 
         // Perform an upsert
         var result = yield connectedClient.db('test').collection('tests').updateOne({a:1}, {a:1}, {upsert:true, w:1});
@@ -380,6 +389,8 @@ describe('REST Integration', function() {
           assert.equal('replace document contains operators', e.message);
         }
 
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection
@@ -424,7 +435,7 @@ describe('REST Integration', function() {
         var client = new MongoBrowserClient(new RESTClientTransport('/mongodb', {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080/mongodb');
+        var connectedClient = yield client.connect('http://localhost:9091/mongodb');
 
         // Perform an insert
         var result = yield connectedClient.db('test').collection('tests').insertOne({a:1}, {w:1});
@@ -435,6 +446,8 @@ describe('REST Integration', function() {
         var result = yield connectedClient.db('test').collection('tests').deleteOne({a:1}, {w:1});
         assert.equal(1, result.deletedCount);
 
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection
@@ -477,7 +490,7 @@ describe('REST Integration', function() {
         var client = new MongoBrowserClient(new RESTClientTransport('/mongodb', {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080/mongodb');
+        var connectedClient = yield client.connect('http://localhost:9091/mongodb');
 
         // Perform an insert
         var result = yield connectedClient.db('test').collection('tests').insertMany([{a:1}, {a:1}], {w:1});
@@ -488,6 +501,8 @@ describe('REST Integration', function() {
         var result = yield connectedClient.db('test').collection('tests').deleteMany({a:1}, {w:1});
         assert.equal(2, result.deletedCount);
 
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection
@@ -532,7 +547,7 @@ describe('REST Integration', function() {
         var client = new MongoBrowserClient(new RESTClientTransport('/mongodb', {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080/mongodb');
+        var connectedClient = yield client.connect('http://localhost:9091/mongodb');
 
         // Perform an insert
         var result = yield connectedClient.db('test').collection('tests').insertMany([{a:1}, {a:1}], {w:1});
@@ -543,6 +558,8 @@ describe('REST Integration', function() {
         var result = yield connectedClient.db('test').collection('tests').findOneAndDelete({a:1}, {w:1});
         assert.equal(1, result.a);
 
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection
@@ -585,7 +602,7 @@ describe('REST Integration', function() {
         var client = new MongoBrowserClient(new RESTClientTransport('/mongodb', {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080/mongodb');
+        var connectedClient = yield client.connect('http://localhost:9091/mongodb');
 
         // Perform an insert
         var result = yield connectedClient.db('test').collection('tests').insertMany([{a:1}, {a:1}], {w:1});
@@ -597,6 +614,8 @@ describe('REST Integration', function() {
         assert.equal(1, result.a);
         assert.equal(1, result.b);
 
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection
@@ -639,7 +658,7 @@ describe('REST Integration', function() {
         var client = new MongoBrowserClient(new RESTClientTransport('/mongodb', {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080/mongodb');
+        var connectedClient = yield client.connect('http://localhost:9091/mongodb');
 
         // Perform an insert
         var result = yield connectedClient.db('test').collection('tests').insertMany([{a:1}, {a:1}], {w:1});
@@ -651,6 +670,8 @@ describe('REST Integration', function() {
         assert.equal(1, result.a);
         assert.equal(1, result.b);
 
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection
@@ -695,7 +716,7 @@ describe('REST Integration', function() {
         var client = new MongoBrowserClient(new RESTClientTransport('/mongodb', {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080/mongodb');
+        var connectedClient = yield client.connect('http://localhost:9091/mongodb');
 
         // Create documents
         var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});
@@ -717,6 +738,8 @@ describe('REST Integration', function() {
         var docs = yield connectedClient.db('test').collection('tests').find({}).batchSize(20).toArray();
         assert.equal(1005, docs.length);
 
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection
@@ -759,7 +782,7 @@ describe('REST Integration', function() {
         var client = new MongoBrowserClient(new RESTClientTransport('/mongodb', {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080/mongodb');
+        var connectedClient = yield client.connect('http://localhost:9091/mongodb');
 
         // Create documents
         var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});
@@ -781,6 +804,8 @@ describe('REST Integration', function() {
         var docs = yield connectedClient.db('test').collection('tests').find({}).batchSize(20).toArray();
         assert.equal(1005, docs.length);
 
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection
@@ -823,7 +848,7 @@ describe('REST Integration', function() {
         var client = new MongoBrowserClient(new RESTClientTransport('/mongodb', {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080/mongodb');
+        var connectedClient = yield client.connect('http://localhost:9091/mongodb');
         // Create documents
         var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});
 
@@ -862,6 +887,8 @@ describe('REST Integration', function() {
         // Assert the values
         assert.equal(1005, docs.length);
 
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection
@@ -904,7 +931,7 @@ describe('REST Integration', function() {
         var client = new MongoBrowserClient(new RESTClientTransport('/mongodb', {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080/mongodb');
+        var connectedClient = yield client.connect('http://localhost:9091/mongodb');
         // Create documents
         var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});
 
@@ -942,6 +969,8 @@ describe('REST Integration', function() {
         // Assert the values
         assert.equal(1005, docs.length);
 
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection
@@ -984,7 +1013,7 @@ describe('REST Integration', function() {
         var client = new MongoBrowserClient(new RESTClientTransport('/mongodb', {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080/mongodb');
+        var connectedClient = yield client.connect('http://localhost:9091/mongodb');
         // Create documents
         var insertDocs = []; for(var i = 0; i < 105; i++) insertDocs.push({a:i});
 
@@ -1004,6 +1033,8 @@ describe('REST Integration', function() {
             // Assert the values
             assert.equal(105, docs.length);
 
+            // Destroy MongoDB browser server
+            mongoDBserver.destroy();
             // Shut down the
             httpServer.close();
             // Shut down MongoDB connection
@@ -1049,7 +1080,7 @@ describe('REST Integration', function() {
         var client = new MongoBrowserClient(new RESTClientTransport('/mongodb', {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080/mongodb');
+        var connectedClient = yield client.connect('http://localhost:9091/mongodb');
         // Create documents
         var insertDocs = []; for(var i = 0; i < 205; i++) insertDocs.push({a:i});
 
@@ -1072,6 +1103,8 @@ describe('REST Integration', function() {
         // Assert the values
         assert.equal(205, docs.length);
 
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection
@@ -1114,7 +1147,7 @@ describe('REST Integration', function() {
         var client = new MongoBrowserClient(new RESTClientTransport('/mongodb', {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080/mongodb');
+        var connectedClient = yield client.connect('http://localhost:9091/mongodb');
         // Create documents
         var insertDocs = []; for(var i = 0; i < 105; i++) insertDocs.push({a:i});
 
@@ -1131,6 +1164,8 @@ describe('REST Integration', function() {
         // Assert the values
         assert.equal(105, docs.length);
 
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection
@@ -1173,7 +1208,7 @@ describe('REST Integration', function() {
         var client = new MongoBrowserClient(new RESTClientTransport('/mongodb', {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080/mongodb');
+        var connectedClient = yield client.connect('http://localhost:9091/mongodb');
         // Create documents
         var insertDocs = []; for(var i = 0; i < 105; i++) insertDocs.push({a:i});
 
@@ -1197,6 +1232,8 @@ describe('REST Integration', function() {
         // Assert the values
         assert.equal(105, docs.length);
 
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection
@@ -1239,7 +1276,7 @@ describe('REST Integration', function() {
         var client = new MongoBrowserClient(new RESTClientTransport('/mongodb', {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080/mongodb');
+        var connectedClient = yield client.connect('http://localhost:9091/mongodb');
         // Create documents
         var insertDocs = []; for(var i = 0; i < 105; i++) insertDocs.push({a:i});
 
@@ -1261,6 +1298,8 @@ describe('REST Integration', function() {
         // Assert the values
         assert.equal(105, docs.length);
 
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection
@@ -1303,7 +1342,7 @@ describe('REST Integration', function() {
         var client = new MongoBrowserClient(new RESTClientTransport('/mongodb', {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080/mongodb');
+        var connectedClient = yield client.connect('http://localhost:9091/mongodb');
         // Create documents
         var insertDocs = []; for(var i = 0; i < 105; i++) insertDocs.push({a:i});
 
@@ -1323,6 +1362,8 @@ describe('REST Integration', function() {
             // Assert the values
             assert.equal(105, docs.length);
 
+            // Destroy MongoDB browser server
+            mongoDBserver.destroy();
             // Shut down the
             httpServer.close();
             // Shut down MongoDB connection
@@ -1410,12 +1451,14 @@ describe('REST Integration', function() {
         var client = new MongoBrowserClient(new RESTClientTransport('/mongodb', {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080/mongodb');
+        var connectedClient = yield client.connect('http://localhost:9091/mongodb');
 
         // Execute ping command
         var result = yield connectedClient.db('admin').command({ping:true});
         assert.equal(true, result.ok);
 
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection
@@ -1468,7 +1511,7 @@ describe('REST Integration', function() {
         var client = new MongoBrowserClient(new RESTClientTransport('/mongodb', {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080/mongodb');
+        var connectedClient = yield client.connect('http://localhost:9091/mongodb');
 
         // Execute fail command
         var result = yield connectedClient.db('admin').command({fail:false});
@@ -1494,6 +1537,8 @@ describe('REST Integration', function() {
         assert.deepEqual([ { message: 'requested command failure' },
           { message: 'requested command failure 2' } ], err.errors);
 
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection
@@ -1538,7 +1583,7 @@ describe('REST Integration', function() {
         var client = new MongoBrowserClient(new RESTClientTransport('/mongodb', {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080/mongodb');
+        var connectedClient = yield client.connect('http://localhost:9091/mongodb');
 
         // Execute a command that does not exist and receive the error code
         try {
@@ -1549,6 +1594,8 @@ describe('REST Integration', function() {
           assert.deepEqual({buildProfile:true}, err.op);
         }
 
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection
@@ -1591,7 +1638,7 @@ describe('REST Integration', function() {
         var client = new MongoBrowserClient(new RESTClientTransport('/mongodb', {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080/mongodb');
+        var connectedClient = yield client.connect('http://localhost:9091/mongodb');
 
         // Create documents
         var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});
@@ -1617,6 +1664,8 @@ describe('REST Integration', function() {
         } catch(err) {
         }
 
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection
@@ -1659,7 +1708,7 @@ describe('REST Integration', function() {
         var client = new MongoBrowserClient(new RESTClientTransport('/mongodb', {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080/mongodb');
+        var connectedClient = yield client.connect('http://localhost:9091/mongodb');
 
         // Create documents
         var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});
@@ -1690,6 +1739,9 @@ describe('REST Integration', function() {
         }
 
         assert.ok(typeof code == 'number');
+
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection
@@ -1732,7 +1784,7 @@ describe('REST Integration', function() {
         var client = new MongoBrowserClient(new RESTClientTransport('/mongodb', {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080/mongodb');
+        var connectedClient = yield client.connect('http://localhost:9091/mongodb');
 
         // Create documents
         var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});
@@ -1759,6 +1811,9 @@ describe('REST Integration', function() {
         }
 
         assert.ok(typeof code == 'number');
+
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection

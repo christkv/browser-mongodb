@@ -33,14 +33,14 @@ var createServer = function(options) {
       // Add to the server
       var mongoDBserver = new Server(client, options || {});
       // Add a socket transport
-      mongoDBserver.registerHandler(new SocketIOTransport(httpServer));
+      mongoDBserver.registerTransport(new SocketIOTransport(httpServer));
 
       // Register channel handlers these are used to handle any data before it's passed through
       // to the mongodb handler
-      mongoDBserver.channel('mongodb');
+      mongoDBserver.createChannel('mongodb');
 
       // Listen to the http server
-      httpServer.listen(8080, function() {
+      httpServer.listen(9091, function() {
         resolve({
           httpServer: httpServer,
           client: client,
@@ -84,7 +84,7 @@ describe('Integration', function() {
         var client = new MongoBrowserClient(new SocketIOClientTransport(ioClient.connect, {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080');
+        var connectedClient = yield client.connect('http://localhost:9091');
 
         // Execute a command that does not exist and receive the error code
         try {
@@ -95,6 +95,8 @@ describe('Integration', function() {
           assert.deepEqual({buildProfile:true}, err.op);
         }
 
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection
@@ -137,7 +139,7 @@ describe('Integration', function() {
         var client = new MongoBrowserClient(new SocketIOClientTransport(ioClient.connect, {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080');
+        var connectedClient = yield client.connect('http://localhost:9091');
 
         // Create documents
         var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});
@@ -163,6 +165,8 @@ describe('Integration', function() {
         } catch(err) {
         }
 
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection
@@ -205,7 +209,7 @@ describe('Integration', function() {
         var client = new MongoBrowserClient(new SocketIOClientTransport(ioClient.connect, {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080');
+        var connectedClient = yield client.connect('http://localhost:9091');
 
         // Create documents
         var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});
@@ -234,6 +238,8 @@ describe('Integration', function() {
         }
 
         assert.ok(typeof code == 'number');
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection
@@ -276,7 +282,7 @@ describe('Integration', function() {
         var client = new MongoBrowserClient(new SocketIOClientTransport(ioClient.connect, {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080');
+        var connectedClient = yield client.connect('http://localhost:9091');
 
         // Create documents
         var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});
@@ -303,6 +309,8 @@ describe('Integration', function() {
         }
 
         assert.ok(typeof code == 'number');
+        // Destroy MongoDB browser server
+        mongoDBserver.destroy();
         // Shut down the
         httpServer.close();
         // Shut down MongoDB connection

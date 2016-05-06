@@ -33,9 +33,9 @@ var createServer = function(options) {
       // Add to the server
       var mongoDBserver = new Server(client, options || {});
       // Add a socket transport
-      mongoDBserver.registerHandler(new SocketIOTransport(httpServer));
+      mongoDBserver.registerTransport(new SocketIOTransport(httpServer));
       // Listen to the http server
-      httpServer.listen(8080, function() {
+      httpServer.listen(9091, function() {
         resolve({
           httpServer: httpServer,
           client: client,
@@ -73,7 +73,10 @@ describe('Security', function() {
 
         // Register channel handlers these are used to handle any data before it's passed through
         // to the mongodb handler
-        mongoDBserver.channel('mongodb').before(function(conn, channel, data, callback) {
+        var channel = yield mongoDBserver.createChannel('mongodb');
+
+        // Register before handler
+        channel.before(function(conn, channel, data, callback) {
           callback(new Error('not authenticated'));
         });
 
@@ -85,7 +88,7 @@ describe('Security', function() {
         // Create an instance
         try {
           // Attempt to connect
-          var connectedClient = yield client.connect('http://localhost:8080');
+          var connectedClient = yield client.connect('http://localhost:9091');
         } catch(e) {
           assert.equal('pre condition failed', e.message);
           assert.equal(false, e.ok);
@@ -93,6 +96,8 @@ describe('Security', function() {
           assert.deepEqual({ ismaster: true }, e.op);
           assert.deepEqual([ { message: 'not authenticated' } ], e.errors);
 
+          // Destroy MongoDB browser server
+          mongoDBserver.destroy();
           // Shut down the
           httpServer.close();
           // Shut down MongoDB connection
@@ -130,7 +135,9 @@ describe('Security', function() {
 
         // Register channel handlers these are used to handle any data before it's passed through
         // to the mongodb handler
-        mongoDBserver.channel('mongodb').before(function(conn, channel, data, callback) {
+        var channel = yield mongoDBserver.createChannel('mongodb');
+        // Register before handler
+        channel.before(function(conn, channel, data, callback) {
           callback([new Error('not authenticated'), new Error('some other error')]);
         });
 
@@ -142,7 +149,7 @@ describe('Security', function() {
         // Create an instance
         try {
           // Attempt to connect
-          var connectedClient = yield client.connect('http://localhost:8080');
+          var connectedClient = yield client.connect('http://localhost:9091');
         } catch(e) {
           assert.equal('pre condition failed', e.message);
           assert.equal(false, e.ok);
@@ -150,6 +157,8 @@ describe('Security', function() {
           assert.deepEqual({ ismaster: true }, e.op);
           assert.deepEqual([ { message: 'not authenticated' }, { message: 'some other error' } ], e.errors);
 
+          // Destroy MongoDB browser server
+          mongoDBserver.destroy();
           // Shut down the
           httpServer.close();
           // Shut down MongoDB connection

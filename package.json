@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "watch": "gulp watch"
+    "watch": "gulp watch",
+    "test": "mocha test/integration/**/*"
   },
   "repository": {
     "type": "git",

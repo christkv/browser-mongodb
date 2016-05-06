@@ -32,14 +32,14 @@ var createServer = function(options) {
       // Add to the server
       var mongoDBserver = new Server(client, options || {});
       // Add a socket transport
-      mongoDBserver.registerHandler(new SocketIOTransport(httpServer));
+      mongoDBserver.registerTransport(new SocketIOTransport(httpServer));
 
       // Register channel handlers these are used to handle any data before it's passed through
       // to the mongodb handler
-      mongoDBserver.channel('mongodb');
+      mongoDBserver.createChannel('mongodb');
 
       // Listen to the http server
-      httpServer.listen(8080, function() {
+      httpServer.listen(9091, function() {
         resolve({
           httpServer: httpServer,
           client: client,
@@ -88,7 +88,7 @@ describe('Integration', function() {
         yield dbClient.db('test').createCollection('tests', {capped:true, size: 4500000});
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080');
+        var connectedClient = yield client.connect('http://localhost:9091');
         // Create documents
         var insertDocs = []; for(var i = 0; i < 105; i++) insertDocs.push({a:i});
 
@@ -113,6 +113,8 @@ describe('Integration', function() {
         cursor.on('end', function() {
           co(function*() {
             assert.equal(205, total);
+            // Destroy MongoDB browser server
+            mongoDBserver.destroy();
             // Shut down the
             httpServer.close();
             // Shut down MongoDB connection

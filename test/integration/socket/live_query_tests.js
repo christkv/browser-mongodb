@@ -33,14 +33,14 @@ var createServer = function(options) {
       // Add to the server
       var mongoDBserver = new Server(client, options || {});
       // Add a socket transport
-      mongoDBserver.registerHandler(new SocketIOTransport(httpServer));
+      mongoDBserver.registerTransport(new SocketIOTransport(httpServer));
 
       // Register channel handlers these are used to handle any data before it's passed through
       // to the mongodb handler
-      mongoDBserver.channel('mongodb');
+      mongoDBserver.createChannel('mongodb');
 
       // Listen to the http server
-      httpServer.listen(8080, function() {
+      httpServer.listen(9091, function() {
         resolve({
           httpServer: httpServer,
           client: client,
@@ -82,7 +82,7 @@ describe('Integration', function() {
         //
         var object = yield createServer({raw:true});
         var mongoDBserver = object.mongoDBserver;
-        yield mongoDBserver.connect();
+        // yield mongoDBserver.connect();
 
         var dbClient = object.client;
         var httpServer = object.httpServer;
@@ -106,7 +106,7 @@ describe('Integration', function() {
         var client = new MongoBrowserClient(new SocketIOClientTransport(ioClient.connect, {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080');
+        var connectedClient = yield client.connect('http://localhost:9091');
 
         process.nextTick(function() {
           co(function*() {
@@ -124,6 +124,8 @@ describe('Integration', function() {
             assert.ok(id != null);
             assert.equal(1, fields['$set'].b);
 
+            // Destroy MongoDB browser server
+            mongoDBserver.destroy();
             // Shut down the
             httpServer.close();
             // Shut down MongoDB connection
@@ -167,7 +169,7 @@ describe('Integration', function() {
         //
         var object = yield createServer({raw:true});
         var mongoDBserver = object.mongoDBserver;
-        yield mongoDBserver.connect();
+        // yield mongoDBserver.connect();
 
         var dbClient = object.client;
         var httpServer = object.httpServer;
@@ -191,7 +193,7 @@ describe('Integration', function() {
         var client = new MongoBrowserClient(new SocketIOClientTransport(ioClient.connect, {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080');
+        var connectedClient = yield client.connect('http://localhost:9091');
         // Iterate over all the cursors
         var cursor = connectedClient.db('test').collection('tests1').find({a:1}).liveQuery();
 
@@ -200,6 +202,8 @@ describe('Integration', function() {
             assert.ok(id != null);
             assert.equal(1, fields.a);
 
+            // Destroy MongoDB browser server
+            mongoDBserver.destroy();
             // Shut down the
             httpServer.close();
             // Shut down MongoDB connection
@@ -246,7 +250,7 @@ describe('Integration', function() {
         //
         var object = yield createServer({raw:true});
         var mongoDBserver = object.mongoDBserver;
-        yield mongoDBserver.connect();
+        // yield mongoDBserver.connect();
 
         var dbClient = object.client;
         var httpServer = object.httpServer;
@@ -270,7 +274,7 @@ describe('Integration', function() {
         var client = new MongoBrowserClient(new SocketIOClientTransport(ioClient.connect, {}));
 
         // Attempt to connect
-        var connectedClient = yield client.connect('http://localhost:8080');
+        var connectedClient = yield client.connect('http://localhost:9091');
 
         process.nextTick(function() {
           co(function*() {
@@ -284,6 +288,8 @@ describe('Integration', function() {
         cursor.on('removed', function(id) {
           co(function*() {
             assert.ok(id != null);
+            // Destroy MongoDB browser server
+            mongoDBserver.destroy();
             // Shut down the
             httpServer.close();
             // Shut down MongoDB connection

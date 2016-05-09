@@ -301,4 +301,3 @@ Binary.SUBTYPE_USER_DEFINED = 128;
  * Expose.
  */
 module.exports = Binary;
-module.exports.Binary = Binary;

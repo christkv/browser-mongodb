@@ -20,7 +20,8 @@
   "dependencies": {
     "bson": "^0.4.21",
     "co": "~4.4",
-    "mongodb": "^2.1.x",
+    "es6-promise": "^3.2.1",
+    "mongodb": "mongodb/node-mongodb-native#2.2",
     "mongodb-extended-json": "^1.6.1",
     "socket.io": "^1.3.7",
     "underscore": "^1.8.3",
@@ -31,7 +32,6 @@
     "babel-preset-es2015": "^6.3.13",
     "beautylog": "^2.0.3",
     "body-parser": "^1.15.0",
-    "es6-promise": "^1.0.0",
     "express": "^4.13.4",
     "google-closure-compiler": "^20151216.2.0",
     "gulp": "^3.9.0",

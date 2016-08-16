@@ -58,8 +58,14 @@ class Command {
           command.readConcern.level = op.readConcern.level;
         }
 
+        // console.log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+
         // Execute the command
         var result = yield mongoClient.db(db).command(command, options);
+
+        // console.log("==================================================")
+        // console.dir(result)
+        // process.exit(0)
 
         // Check if we have a raw response
         if(options.raw && result.documents[0].slice(0, 64).indexOf(okFalse) != -1) {

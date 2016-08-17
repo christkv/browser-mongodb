@@ -4,7 +4,7 @@ node_js:
   - "5"
 sudo: false
 env:
-  - CXX=clang-3.6 MONGODB_VERSION=3.2.0
+  - CXX=clang-3.6 MONGODB_VERSION=3.2.9
 compiler: clang-3.6
 addons:
   apt:

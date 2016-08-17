@@ -107,6 +107,8 @@ describe('Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
 
         process.nextTick(function() {
           co(function*() {
@@ -194,6 +196,8 @@ describe('Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
         // Iterate over all the cursors
         var cursor = connectedClient.db('test').collection('tests1').find({a:1}).liveQuery();
 
@@ -275,6 +279,8 @@ describe('Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
 
         process.nextTick(function() {
           co(function*() {

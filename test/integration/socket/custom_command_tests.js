@@ -128,6 +128,8 @@ describe('Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
 
         // Execute ping command
         var result = yield connectedClient.db('admin').command({ping:true});
@@ -188,6 +190,8 @@ describe('Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
 
         // Execute fail command
         var result = yield connectedClient.db('admin').command({fail:false});

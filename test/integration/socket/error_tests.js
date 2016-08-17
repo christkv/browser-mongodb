@@ -85,6 +85,8 @@ describe('Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
 
         // Execute a command that does not exist and receive the error code
         try {
@@ -140,6 +142,8 @@ describe('Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
 
         // Create documents
         var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});
@@ -210,6 +214,8 @@ describe('Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
 
         // Create documents
         var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});
@@ -283,6 +289,8 @@ describe('Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
 
         // Create documents
         var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});

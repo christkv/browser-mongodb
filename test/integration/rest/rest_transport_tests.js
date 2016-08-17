@@ -140,6 +140,9 @@ describe('REST Integration', function() {
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091/mongodb');
 
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
+
         // Perform an insert
         var result = yield connectedClient.db('test').collection('tests').insertOne({a:1}, {w:1});
         assert.equal(1, result.insertedCount);
@@ -190,6 +193,9 @@ describe('REST Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091/mongodb');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
+
         // Perform an insert
         var result = yield connectedClient.db('test').collection('tests').insertMany([{a:1}, {a:2}], {w:1});
         assert.equal(2, result.insertedCount);
@@ -242,6 +248,8 @@ describe('REST Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091/mongodb');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
 
         // Perform an upsert
         var result = yield connectedClient.db('test').collection('tests').updateOne({a:1}, {a:1}, {upsert:true, w:1});
@@ -301,6 +309,8 @@ describe('REST Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091/mongodb');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
 
         // Perform an upsert
         var result = yield connectedClient.db('test').collection('tests').updateOne({a:1, b:1}, {a:1, b:1}, {upsert:true, w:1});
@@ -367,6 +377,8 @@ describe('REST Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091/mongodb');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
 
         // Perform an upsert
         var result = yield connectedClient.db('test').collection('tests').updateOne({a:1}, {a:1}, {upsert:true, w:1});
@@ -436,6 +448,8 @@ describe('REST Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091/mongodb');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
 
         // Perform an insert
         var result = yield connectedClient.db('test').collection('tests').insertOne({a:1}, {w:1});
@@ -491,6 +505,8 @@ describe('REST Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091/mongodb');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
 
         // Perform an insert
         var result = yield connectedClient.db('test').collection('tests').insertMany([{a:1}, {a:1}], {w:1});
@@ -548,6 +564,8 @@ describe('REST Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091/mongodb');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
 
         // Perform an insert
         var result = yield connectedClient.db('test').collection('tests').insertMany([{a:1}, {a:1}], {w:1});
@@ -603,6 +621,8 @@ describe('REST Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091/mongodb');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
 
         // Perform an insert
         var result = yield connectedClient.db('test').collection('tests').insertMany([{a:1}, {a:1}], {w:1});
@@ -659,6 +679,8 @@ describe('REST Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091/mongodb');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
 
         // Perform an insert
         var result = yield connectedClient.db('test').collection('tests').insertMany([{a:1}, {a:1}], {w:1});
@@ -717,6 +739,8 @@ describe('REST Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091/mongodb');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
 
         // Create documents
         var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});
@@ -783,6 +807,8 @@ describe('REST Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091/mongodb');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
 
         // Create documents
         var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});
@@ -849,6 +875,8 @@ describe('REST Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091/mongodb');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
         // Create documents
         var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});
 
@@ -932,6 +960,8 @@ describe('REST Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091/mongodb');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
         // Create documents
         var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});
 
@@ -1014,6 +1044,8 @@ describe('REST Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091/mongodb');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
         // Create documents
         var insertDocs = []; for(var i = 0; i < 105; i++) insertDocs.push({a:i});
 
@@ -1081,6 +1113,8 @@ describe('REST Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091/mongodb');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
         // Create documents
         var insertDocs = []; for(var i = 0; i < 205; i++) insertDocs.push({a:i});
 
@@ -1148,6 +1182,8 @@ describe('REST Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091/mongodb');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
         // Create documents
         var insertDocs = []; for(var i = 0; i < 105; i++) insertDocs.push({a:i});
 
@@ -1209,6 +1245,8 @@ describe('REST Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091/mongodb');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
         // Create documents
         var insertDocs = []; for(var i = 0; i < 105; i++) insertDocs.push({a:i});
 
@@ -1277,6 +1315,8 @@ describe('REST Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091/mongodb');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
         // Create documents
         var insertDocs = []; for(var i = 0; i < 105; i++) insertDocs.push({a:i});
 
@@ -1343,6 +1383,8 @@ describe('REST Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091/mongodb');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
         // Create documents
         var insertDocs = []; for(var i = 0; i < 105; i++) insertDocs.push({a:i});
 
@@ -1452,6 +1494,8 @@ describe('REST Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091/mongodb');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
 
         // Execute ping command
         var result = yield connectedClient.db('admin').command({ping:true});
@@ -1512,6 +1556,8 @@ describe('REST Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091/mongodb');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
 
         // Execute fail command
         var result = yield connectedClient.db('admin').command({fail:false});
@@ -1584,6 +1630,8 @@ describe('REST Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091/mongodb');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
 
         // Execute a command that does not exist and receive the error code
         try {
@@ -1639,6 +1687,8 @@ describe('REST Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091/mongodb');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
 
         // Create documents
         var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});
@@ -1709,6 +1759,8 @@ describe('REST Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091/mongodb');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
 
         // Create documents
         var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});
@@ -1785,6 +1837,8 @@ describe('REST Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091/mongodb');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
 
         // Create documents
         var insertDocs = []; for(var i = 0; i < 1005; i++) insertDocs.push({a:i});

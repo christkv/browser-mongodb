@@ -79,6 +79,8 @@ describe('Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
 
         // Destroy MongoDB browser server
         mongoDBserver.destroy();
@@ -127,6 +129,8 @@ describe('Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
         // Perform an insert
         var result = yield connectedClient.db('test').collection('tests').insertOne({a:1}, {w:1});
         assert.equal(1, result.insertedCount);
@@ -177,6 +181,8 @@ describe('Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
         // Perform an insert
         var result = yield connectedClient.db('test').collection('tests').insertMany([{a:1}, {a:2}], {w:1});
         assert.equal(2, result.insertedCount);
@@ -229,6 +235,8 @@ describe('Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
 
         // Perform an upsert
         var result = yield connectedClient.db('test').collection('tests').updateOne({a:1}, {a:1}, {upsert:true, w:1});
@@ -288,6 +296,8 @@ describe('Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
 
         // Perform an upsert
         var result = yield connectedClient.db('test').collection('tests').updateOne({a:1, b:1}, {a:1, b:1}, {upsert:true, w:1});
@@ -353,6 +363,8 @@ describe('Integration', function() {
         var client = new MongoBrowserClient(new SocketIOClientTransport(ioClient.connect, {}));
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
 
         // Perform an upsert
         var result = yield connectedClient.db('test').collection('tests').updateOne({a:1}, {a:1}, {upsert:true, w:1});
@@ -422,6 +434,8 @@ describe('Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
         // Perform an insert
         var result = yield connectedClient.db('test').collection('tests').insertOne({a:1}, {w:1});
         assert.equal(1, result.insertedCount);
@@ -476,6 +490,8 @@ describe('Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
         // Perform an insert
         var result = yield connectedClient.db('test').collection('tests').insertMany([{a:1}, {a:1}], {w:1});
         assert.equal(2, result.insertedCount);
@@ -532,6 +548,8 @@ describe('Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
         // Perform an insert
         var result = yield connectedClient.db('test').collection('tests').insertMany([{a:1}, {a:1}], {w:1});
         assert.equal(2, result.insertedCount);
@@ -584,6 +602,8 @@ describe('Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
         // Perform an insert
         var result = yield connectedClient.db('test').collection('tests').insertMany([{a:1}, {a:1}], {w:1});
         assert.equal(2, result.insertedCount);
@@ -639,6 +659,8 @@ describe('Integration', function() {
 
         // Attempt to connect
         var connectedClient = yield client.connect('http://localhost:9091');
+        // Delete all items
+        yield connectedClient.db('test').collection('tests').deleteMany({}, {w:1});
         // Perform an insert
         var result = yield connectedClient.db('test').collection('tests').insertMany([{a:1}, {a:1}], {w:1});
         assert.equal(2, result.insertedCount);

@@ -2,7 +2,7 @@
 
 var EventEmitter = require('events').EventEmitter,
   f = require('util').format,
-  ERRORS = require('./mongodb/errors');
+  ERRORS = require('../../mongodb/errors');
 
 // Connection Id
 var id = 0;
@@ -73,21 +73,4 @@ class Connection extends EventEmitter {
   }
 }
 
-class ExpressRESTTransport extends EventEmitter {
-  constructor(url, server) {
-    super();
-    var self = this;
-
-    // Contains all the channel handlers
-    this.handlers = {};
-
-    // Emit a new connection
-    self.emit('connection', new Connection(url, server, self.handlers));
-  }
-
-  channel(handler) {
-    this.handlers[handler.channel] = handler;
-  }
-}
-
-module.exports = ExpressRESTTransport;
+module.exports = Connection;

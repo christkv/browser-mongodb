@@ -21,13 +21,18 @@ var execute = function(self, url, obj) {
 
     // Wait for state changes
     xhr.onreadystatechange = function() {//Call a function when the state changes.
+      // console.log("============================= XHR")
+      // console.log("readyState :: " + xhr.readyState)
+      // console.log("status :: " + xhr.status)
+      // console.log("responseText :: " + xhr.responseText)
+
       if(xhr.readyState == 4 && xhr.status == 200) {
         try {
           resolve(JSON.parse(xhr.responseText));
         } catch(err) {
           reject(err);
         }
-      } else if(xhr.readyState == 4 && xhr.status == 200) {
+      } else if(xhr.readyState == 4 && xhr.status != 200) {
         reject(new Error(xhr.responseText));
       }
     }
@@ -70,6 +75,9 @@ class Connection extends EventEmitter {
 
       // Unpack and call the handler
       self.handlers[r.channel](r.obj);
+    }).catch(function(err) {
+      // console.log("=========== ERROR")
+      self.emit('error', err);
     });
   }
 }
@@ -90,6 +98,9 @@ class RESTTransport {
         reject(err);
       }
     });
+  }
+
+  disconnect() {
   }
 
   isConnected() {

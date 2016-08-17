@@ -18,7 +18,15 @@ class Connection extends EventEmitter {
       self.emit('connect');
     });
 
+    self.socket.on('disconnect', function(s) {
+      self.emit('disconnect');
+    });
+
     self.socket.on('connect_error', function(err) {
+      self.emit('error', err);
+    });
+
+    self.socket.on('connect_timeout', function(err) {
       self.emit('error', err);
     });
   }
@@ -56,6 +64,10 @@ class SocketIOTransport {
         reject(err);
       }
     });
+  }
+
+  disconnect() {
+    if(this.socket) this.socket.disconnect();
   }
 
   on() {

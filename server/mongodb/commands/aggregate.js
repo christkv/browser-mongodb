@@ -28,7 +28,7 @@ class Command {
 
         // No pomoteLong set then default to false
         if(options.promoteLongs == null) {
-          options.promoteLongs = true;
+          options.promoteLongs = false;
         }
 
         // Get the full result
@@ -59,6 +59,7 @@ class Command {
         }
 
         // console.log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+        // console.dir(options)
 
         // Execute the command
         var result = yield mongoClient.db(db).command(command, options);
@@ -75,6 +76,9 @@ class Command {
             ok:false, code: errorMessage.code, message: errorMessage.errmsg, op: op
           });
         }
+
+        // console.log("===============================================")
+        // console.dir(result.documents)
 
         // Create extended EJSON if don't have a raw query
         if(!options.raw) {

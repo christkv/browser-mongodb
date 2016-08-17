@@ -2,7 +2,7 @@ var co = require('co'),
   path = require('path'),
   assert = require('assert'),
   f = require('util').format,
-  SocketIOTransport = require('../../../server/socket_io_transport'),
+  SocketIOTransport = require('../../../server/transports/socketio'),
   Server = require('../../../server/server'),
   MongoClient = require('mongodb').MongoClient;
 

@@ -1,7 +1,7 @@
 "use strict"
 
 var ChannelHandler = require('./mongodb/handler'),
-  LiveQueryHandler = require('./live_query_handler'),
+  LiveQueryHandler = require('./live_query/handler'),
   f = require('util').format,
   fs = require('fs'),
   co = require('co');

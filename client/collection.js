@@ -4,6 +4,11 @@ var Promise = require('./util').Promise,
   AggregationCursor = require('./aggregation_cursor'),
   Cursor = require('./cursor');
 
+// Supported options
+var findOneOptions = [
+  'projection', 'comment', 'hint', 'maxTimeMS', 'sort', 'skip',
+];
+
 class Collection {
   constructor(name, db) {
     this.name = name;
@@ -284,6 +289,33 @@ class Collection {
    */
   find(query) {
     return new Cursor(this.db, this, query);
+  }
+
+  /**
+   * Find the first document in the collection matching the query
+   * @method
+   * @param {object} query The cursor query object.
+   * @param {object} [options=null] Optional settings.
+   * @param {object} [options.projection=null] The query projection.
+   * @param {string} [options.comment=null] The query comment.
+   * @param {object} [options.hint=null] The hint object.
+   * @param {number} [options.maxTimeMS=null] The query maxTimeMS.
+   * @param {object} [options.sort=null] The query sort order.
+   * @param {number} [options.skip=null] The query skip value.
+   * @throws {MongoError}
+   * @return {Cursor}
+   */
+  findOne(query, options) {
+    options = options || {};
+    var cursor = this.find(query);
+
+    for (var i = 0; i < findOneOptions.length; i++) {
+      if (options[findOneOptions[i]] != null) {
+        cursor[findOneOptions[i]](options[findOneOptions[i]]);
+      }
+    }
+
+    return cursor.next();
   }
 
   /**

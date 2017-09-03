@@ -114,8 +114,8 @@ class Server {
     this.handler.registerLiveQueryChannel(channel, liveQueryHandler);
 
     // Add the actual handler for the channel
-    this.channels[channel].handler = (connection, channel, obj) => {
-      this.handler.handle(connection, channel, obj);
+    this.channels[channel].handler = (connection, channel, obj, stream) => {
+      this.handler.handle(connection, channel, obj, stream);
     }
 
     // Add the error handler for the channel

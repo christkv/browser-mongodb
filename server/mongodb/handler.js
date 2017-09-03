@@ -68,14 +68,17 @@ class ChannelHandler {
     });
   }
 
-  handle(connection, channel, doc) {
+  handle(connection, channel, doc, stream) {
     var self = this;
 
     co(function*() {
-      console.log("!!!!!!!!!!!!!!!!!!!!!! HANDLE")
+      // console.log("!!!!!!!!!!!!!!!!!!!!!! HANDLE")
+      // console.dir(doc)
+      // console.dir(stream == null)
       // Allways deserialize from extended JSON
       var op = EJSON.deserialize(doc.op);
       var promise = null;
+      // console.dir(op)
 
       // Get command key
       var commandName = Object.keys(op)[0];
@@ -85,6 +88,9 @@ class ChannelHandler {
         // Unpack object
         var validator = self.commands[commandName].validator;
         var handler = self.commands[commandName].handler;
+
+        // Contains the result
+        var result = null;
 
         // Perform the validation
         var results = validator.validate(op);
@@ -98,21 +104,29 @@ class ChannelHandler {
           });
         }
 
-        // console.log(handler.handle.toString())
         // Execute the promise
-        var result = yield handler.handle(connection, self.client, self.bson, doc.op, op, self.liveQueryHandlers[channel], self.options);
+        if(handler.handleStream) {
+          result = yield handler.handleStream(connection, self.client, self.bson, doc.op, op, self.liveQueryHandlers[channel], stream, self.options);
+        } else {
+          result = yield handler.handle(connection, self.client, self.bson, doc.op, op, self.liveQueryHandlers[channel], self.options);
+        }
+
+        // console.log(handler.handle.toString())
         // Null equals empty result
         result = result || {};
-
+        // console.log("!!!!!!!!!!!!!!!!!!!!!! HANDLE 2")
+        
         // Create the command response
         var cmd = {
           ok:true, _id: doc._id, result: result && result.connection ? result.result : result
         };
-
+        // console.log("!!!!!!!!!!!!!!!!!!!!!! HANDLE 3")
+        
         // Add the hashed connection id
         if(result && result.connection) cmd.connection = result.connection;
         // Write the content out
         connection.write(channel, cmd);
+        // console.log("!!!!!!!!!!!!!!!!!!!!!! HANDLE 4")
       } else {
         // We have an unsuported protocol message
         return connection.write(channel, {

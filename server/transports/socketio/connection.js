@@ -34,8 +34,10 @@ class Connection extends EventEmitter {
 
     // Register the handler
     var registerHandler = function(channel, channelHandler) {
+      //
+      // Listen on standard socket.io channel
       connection.on(channel, function(data) {
-        console.log("################## ON DATA")
+        // console.log("################## ON DATA")
         // PRE HANDLERS
         executeHandlers(0, channelHandler.pre, self, channel, data, function(err) {
           // Do we have an error
@@ -48,14 +50,28 @@ class Connection extends EventEmitter {
         });
       });
 
+      //
+      // Listen to stream over socket.io channel
       ss(connection).on(channel, function(stream, data) {
-        console.log("==== received data")
-        console.dir(data)
+        // console.log("==== received data")
+        // console.dir(data)
 
-        // var filename = path.basename(data.name);
-        // stream.pipe(fs.createWriteStream(filename));
+        // PRE HANDLERS
+        executeHandlers(0, channelHandler.pre, self, channel, data, function(err) {
+          // Do we have an error
+          if(err) {
+            return channelHandler.errorHandler(self, channel, data, Array.isArray(err) ? err : [err]);
+          }
+
+          // console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!11 YO")
+          // console.log(channelHandler.handler.toString())
+          // console.dir(data)
+          // console.log(typeof stream.pipe)
+          // console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!11 YO 2")
+          // Library MongoDB handler
+          channelHandler.handler(self, channel, data, stream);
+        });
       });
-      // console.dir(connection)
     }
 
     // Add listeners to the connection

@@ -88,20 +88,28 @@ class ChannelHandler {
         // Perform the validation
         var results = validator.validate(op);
         if(results.length > 0) {
-          connection.write(channel, {
-            ok:false, _id: doc._id, code: ERRORS.FIND_COMMAND_FAILURE, message: 'command failed validation', op: doc.op
+          return connection.write(channel, {
+            ok:false, 
+            _id: doc._id, 
+            code: ERRORS.FIND_COMMAND_FAILURE, 
+            message: 'command failed validation', op: doc.op, 
+            details: results.map(r => r.message),
           });
         }
 
+        // console.log(handler.handle.toString())
         // Execute the promise
         var result = yield handler.handle(connection, self.client, self.bson, doc.op, op, self.liveQueryHandlers[channel], self.options);
-        // Create the command
+        // Null equals empty result
+        result = result || {};
+
+        // Create the command response
         var cmd = {
-          ok:true, _id: doc._id, result: result.connection ? result.result : result
+          ok:true, _id: doc._id, result: result && result.connection ? result.result : result
         };
 
         // Add the hashed connection id
-        if(result.connection) cmd.connection = result.connection;
+        if(result && result.connection) cmd.connection = result.connection;
         // Write the content out
         connection.write(channel, cmd);
       } else {

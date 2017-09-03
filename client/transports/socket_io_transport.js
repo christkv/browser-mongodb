@@ -1,6 +1,7 @@
 "use strict"
 
 var Promise = require('../util').Promise,
+  ss = require('socket.io-stream'),
   EventEmitter = require('../event_emitter');
 
 const CONNECTING = 0;
@@ -37,6 +38,12 @@ class Connection extends EventEmitter {
 
   write(channel, obj) {
     this.socket.emit(channel, obj);
+  }
+
+  writeStream(channel, obj, stream) {
+    let _stream = ss.createStream();
+    ss(this.socket).emit(channel, _stream, obj);
+    stream.pipe(_stream);
   }
 }
 

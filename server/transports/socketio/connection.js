@@ -1,6 +1,7 @@
 "use strict"
 
-var EventEmitter = require('events').EventEmitter;
+var EventEmitter = require('events').EventEmitter,
+  ss = require('socket.io-stream');
 
 // Connection Id
 var id = 0;
@@ -34,6 +35,7 @@ class Connection extends EventEmitter {
     // Register the handler
     var registerHandler = function(channel, channelHandler) {
       connection.on(channel, function(data) {
+        console.log("################## ON DATA")
         // PRE HANDLERS
         executeHandlers(0, channelHandler.pre, self, channel, data, function(err) {
           // Do we have an error
@@ -45,6 +47,15 @@ class Connection extends EventEmitter {
           channelHandler.handler(self, channel, data);
         });
       });
+
+      ss(connection).on(channel, function(stream, data) {
+        console.log("==== received data")
+        console.dir(data)
+
+        // var filename = path.basename(data.name);
+        // stream.pipe(fs.createWriteStream(filename));
+      });
+      // console.dir(connection)
     }
 
     // Add listeners to the connection

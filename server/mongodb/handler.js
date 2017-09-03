@@ -72,6 +72,7 @@ class ChannelHandler {
     var self = this;
 
     co(function*() {
+      console.log("!!!!!!!!!!!!!!!!!!!!!! HANDLE")
       // Allways deserialize from extended JSON
       var op = EJSON.deserialize(doc.op);
       var promise = null;

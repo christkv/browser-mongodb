@@ -77,21 +77,20 @@ class Server {
   }
 
   registerTransport(handler) {
-    var self = this;
     // Push the handler to the list of available handlers
     this.handlers.push(handler);
 
     //
     // Transport received a new connection
     //
-    handler.on('connection', function(connection) {
-      self.liveConnections[connection.id] = connection;
+    handler.on('connection', (connection) => {
+      this.liveConnections[connection.id] = connection;
     });
 
     //
     // Transport received a disconnect event
     //
-    handler.on('disconnect', function() {
+    handler.on('disconnect', () => {
       delete this.liveConnections[connection.id];
     });
 
@@ -104,47 +103,40 @@ class Server {
     }
   }
 
-  createChannel(channel, options) {
-    var self = this;
-    options = options || {};
+  async createChannel(channel, options = {}) {
+    // Record the channel handlers
+    this.channels[channel] = new Channel(channel);
 
-    return new Promise(function(resolve, reject) {
-      co(function*() {
-        // Record the channel handlers
-        self.channels[channel] = new Channel(channel);
+    // Create a new live query handler
+    var liveQueryHandler = new LiveQueryHandler(channel, this.client, options);
 
-        // Create a new live query handler
-        var liveQueryHandler = new LiveQueryHandler(channel, self.client, options);
+    // Register live query handler
+    this.handler.registerLiveQueryChannel(channel, liveQueryHandler);
 
-        // Register live query handler
-        self.handler.registerLiveQueryChannel(channel, liveQueryHandler);
+    // Add the actual handler for the channel
+    this.channels[channel].handler = (connection, channel, obj) => {
+      this.handler.handle(connection, channel, obj);
+    }
 
-        // Add the actual handler for the channel
-        self.channels[channel].handler = function(connection, channel, obj) {
-          self.handler.handle(connection, channel, obj);
-        }
+    // Add the error handler for the channel
+    this.channels[channel].errorHandler = (connection, channel, obj, errors) => {
+      this.handler.error(connection, channel, obj, errors);
+    }
 
-        // Add the error handler for the channel
-        self.channels[channel].errorHandler = function(connection, channel, obj, errors) {
-          self.handler.error(connection, channel, obj, errors);
-        }
+    // Register the channel handlers
+    for(var i = 0; i < this.handlers.length; i++) {
+      this.handlers[i].channel(this.channels[channel]);
+    }
 
-        // Register the channel handlers
-        for(var i = 0; i < self.handlers.length; i++) {
-          self.handlers[i].channel(self.channels[channel]);
-        }
+    // Get the ismaster
+    var result = await this.handler.ismaster();
+    // We support live queries
+    if(result.liveQuery) {
+      await liveQueryHandler.connect();
+    }
 
-        // Get the ismaster
-        var result = yield self.handler.ismaster();
-        // We support live queries
-        if(result.liveQuery) {
-          yield liveQueryHandler.connect();
-        }
-
-        // Return the object
-        resolve(self.channels[channel]);
-      }).catch(reject);
-    });
+    // Return the object
+    return this.channels[channel];
   }
 }
 

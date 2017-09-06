@@ -11,8 +11,6 @@ var execute = function(self, url, obj) {
   if(window && window.ActiveXObject) { xhr = window.ActiveXObject('Microsoft.XMLHTTP'); }
   else if(window && window.XMLHttpRequest) { xhr = new window.XMLHttpRequest(); }
 
-  console.dir(xhr)
-
   return new Promise(function(resolve, reject) {
     // String to write
     var finalObj = typeof obj == 'string' ? obj : JSON.stringify(obj);
@@ -23,10 +21,10 @@ var execute = function(self, url, obj) {
 
     // Wait for state changes
     xhr.onreadystatechange = function() {//Call a function when the state changes.
-      // console.log("============================= XHR")
-      // console.log("readyState :: " + xhr.readyState)
-      // console.log("status :: " + xhr.status)
-      // console.log("responseText :: " + xhr.responseText)
+      console.log("============================= XHR :: " + url)
+      console.log("readyState :: " + xhr.readyState)
+      console.log("status :: " + xhr.status)
+      console.log("responseText :: " + xhr.responseText)
 
       if(xhr.readyState == 4 && xhr.status == 200) {
         try {
@@ -84,9 +82,8 @@ class Connection extends EventEmitter {
 }
 
 class RESTTransport {
-  constructor(url, options) {
-    this.url = url;
-    this.options = options || {};
+  constructor(options = {}) {
+    this.options = options;
   }
 
   connect(url, options) {

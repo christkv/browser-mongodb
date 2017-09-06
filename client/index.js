@@ -1,8 +1,4 @@
 // Export all the classes we want webpack to allow outside module scope
-if(typeof window === 'undefined') {
-  window = {};
-}
-
 window.mongodb = {}
 window.mongodb.MongoClient = require('./mongo_client');
 window.mongodb.Long = require('./bson/long');

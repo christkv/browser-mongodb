@@ -29,8 +29,10 @@ class Connection extends EventEmitter {
       });
     }
 
+    console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! server post 1 :: " + url)
     // Register the handler for the REST endpoint
     server.post(url, function(req, res) {
+      console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! server post 2")
       // We have no body
       if(!req.body) {
         return res.end(JSON.stringify({

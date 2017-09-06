@@ -11,6 +11,8 @@ var execute = function(self, url, obj) {
   if(window && window.ActiveXObject) { xhr = window.ActiveXObject('Microsoft.XMLHTTP'); }
   else if(window && window.XMLHttpRequest) { xhr = new window.XMLHttpRequest(); }
 
+  console.dir(xhr)
+
   return new Promise(function(resolve, reject) {
     // String to write
     var finalObj = typeof obj == 'string' ? obj : JSON.stringify(obj);
@@ -41,7 +43,6 @@ var execute = function(self, url, obj) {
     xhr.send(finalObj);
   });
 }
-
 
 class Connection extends EventEmitter {
   constructor(url) {
